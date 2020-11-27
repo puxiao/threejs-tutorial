@@ -1,2 +1,2 @@
 # threejs-tutorial
-Three.js 系列教程，学习和探索 Three.js 世界。
+从今天 2020年11月27日 开始学习和探索 Three.js 。  

@@ -6,6 +6,8 @@
 
 Three.js 是基于 WebGL 技术，用于浏览器中开发 3D 交互场景的 JS 引擎。
 
+> 默认 WebGL 只支持简单的 点、线、三角，Three.js 就是在此 WebGL 基础之上，封装出强大且使用起来简单的 JS 3D 类库。
+
 > 目前主流现代浏览器都已支持 WebGL，也意味着支持 Three.js。
 
 

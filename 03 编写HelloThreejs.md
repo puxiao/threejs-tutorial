@@ -222,40 +222,44 @@ yarn start
 
 
 
-**具体代码的修改：**
+#### 具体代码的修改：
 
 1、我们假定继续使用原有示例中的立方体，因此创建几何体的代码不变。
 
 2、为了凸显立方体的区别，我们将创建 3 个不同颜色的材质。
 
-~~const material = new MeshBasicMaterial({ color: 0x44aa88 })~~
+```diff
+- //创建纹理
+- const material = new MeshBasicMaterial({ color: 0x44aa88 })
 
-```
-//创建 3 个纹理
-const material1 = new MeshPhongMaterial({ color: 0x44aa88 })
-const material2 = new MeshPhongMaterial({ color: 0xc50d0d })
-const material3 = new MeshPhongMaterial({ color: 0x39b20a })
++ //创建 3 个纹理
++ const material1 = new MeshPhongMaterial({ color: 0x44aa88 })
++ const material2 = new MeshPhongMaterial({ color: 0xc50d0d })
++ const material3 = new MeshPhongMaterial({ color: 0x39b20a })
 ```
 
 3、创建 3 个网格，每个网格的水平位置不同
 
-~~const cube = new Mesh(geometry, material)~~
-~~scene.add(cube)~~
+```diff
+- //创建网格
+- const cube = new Mesh(geometry, material)~~
+- scene.add(cube)
 
++ //创建 3 个网格
++ const cube1 = new Mesh(geometry, material1)
++ cube1.position.x = -2
++ scene.add(cube1)//将网格添加到场景中
+
++ const cube2 = new Mesh(geometry, material2)
++ cube2.position.x = 0
++ scene.add(cube2)//将网格添加到场景中
+
++ const cube3 = new Mesh(geometry, material3)
++ cube3.position.x = 2
++ scene.add(cube3)//将网格添加到场景中
 ```
-//创建 3 个网格
-const cube1 = new Mesh(geometry, material1)
-cube1.position.x = -2
-scene.add(cube1)//将网格添加到场景中
 
-const cube2 = new Mesh(geometry, material2)
-cube2.position.x = 0
-scene.add(cube2)//将网格添加到场景中
 
-const cube3 = new Mesh(geometry, material3)
-cube3.position.x = 2
-scene.add(cube3)//将网格添加到场景中
-```
 
 4、为了便于后面对于不同网格的循环修改，我们将创建包含 3 个网格的一个数组
 
@@ -265,25 +269,18 @@ const cubes = [cube1, cube2, cube3]
 
 5、修改自动旋转渲染动画的相关代码
 
-~~cube.rotation.x = time~~
-
-~~cube.rotation.y = time~~
-
-```
-//添加自动旋转渲染动画
-const render = (time: number) => {
-    time = time * 0.001
+```diff
+- cube.rotation.x = time
+- cube.rotation.y = time
     
-    //通过 cube.map 循环遍历修改网格相关属性
-    cubes.map(cube => {
-        cube.rotation.x = time
-        cube.rotation.y = time
-    })
-
-    renderer.render(scene, camera)
-    window.requestAnimationFrame(render)
-}
++ //通过 cube.map 循环遍历修改网格相关属性
++ cubes.map(cube => {
++     cube.rotation.x = time
++     cube.rotation.y = time
++ })
 ```
+
+
 
 6、保存并重新执行 yarn start，若一切正常此时就会看到 画面中有 3 个不同颜色的立方体同时在做旋转动画。
 
@@ -293,5 +290,5 @@ const render = (time: number) => {
 
 是不是感觉自己对 Three.js 场景有进一步有所掌握 ^_^。
 
-期待下一章，期待更加精进的自己。
+**期待下一章，期待更加精进的自己。**
 

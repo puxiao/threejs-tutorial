@@ -34,8 +34,8 @@ Three.js 是基于 WebGL 技术，用于浏览器中开发 3D 交互场景的 JS
 **Three.js相关资料官网**
 
 * Three.js官网：https://threejs.org/
-* threejs.org 中文教程：https://threejs.org/docs/index.html#manual/zh/introduction/Creating-a-scene
-
+* threejs.org 中文文档：https://threejs.org/docs/index.html#manual/zh/introduction/Creating-a-scene
+* threejs.org 官方教程：https://threejsfundamentals.org/threejs/lessons/zh_cn/
 * Three.js Github：https://github.com/mrdoob/three.js
 * hewebgl.com Three.js基础教程：http://www.hewebgl.com/article/articledir/1
 * webgl3d.cn Three.js教程：http://www.webgl3d.cn/Three.js/

@@ -248,7 +248,7 @@ homepage 字段是用来设定 html 中文件资源(编译后的 js 或 css) 的
      <meta name="viewport" content="width=device-width, initial-scale=1" />
      <meta name="theme-color" content="#000000" />
      <meta name="description" content="Web site created using create-react-app" />
-     <title>React App</title>
+     <title>Hello Threejs</title>
    </head>
    
    <body>

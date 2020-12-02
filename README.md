@@ -2,8 +2,10 @@
 从今天 2020年11月27日 开始学习和探索 Three.js 。  
 
 
-## 特别说明
-我刚开始学习 three.js，目前主要看以下 3 个网站教程为主：
+
+
+## 我的学习资料
+我刚开始学习 three.js，目前主要看以下 4 个网站教程为主：
 * [threejs.org：官方教程](https://threejsfundamentals.org/threejs/lessons/zh_cn/)
 * [hewebgl.com：Three.js基础教程](http://www.hewebgl.com/article/articledir/1)
 * [webgl3d.cn：Three.js教程](http://www.webgl3d.cn/Three.js/)
@@ -24,7 +26,22 @@
 
 
 
-我希望你掌握：Koa、React、TypeScript 相关技术栈。
+## 你需要掌握的技术栈
+
+* **JS、ES6**
+* **CSS、SCSS**
+* **React、hooks**
+* **TypeScript**
+* **包管理工具Yarn 或 NPM**
+
+以上是本系列文章使用的技术栈。
+
+若将来要将开发的项目发布到线上，你可能还需要掌握：
+
+* **Git 代码管理**
+* **Koa 创建简单web服务器**
+* **Nginx 配置静态服务器**
+* **Docker 创建容器服务**
 
 
 

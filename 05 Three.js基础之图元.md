@@ -8,6 +8,8 @@ Primitive 的复数即为 Primitives。
 
 **所谓 图元 就是 Three.js 内置的一些基础 3D 形状，例如 立方体、球体、圆锥体等。**
 
+**有些文章或教程，直接将 图元 称呼为 几何体。**
+
 > 请注意，内置的图元并不一定都是 3 维体，也可以是 2 维的，例如 平面圆。
 
 例如之前写的 HelloThreejs 示例中，就使用 BoxGeometry 来创建立方体。
@@ -61,8 +63,9 @@ Primitive 的复数即为 Primitives。
 | 环形结(TorusKnot)            | TorusKnotBufferGeometry、TorusKnotGeometry       |
 | 管道/管状(Tube)              | TubeBufferGeometry、TubeGeometry                 |
 | 几何体的所有边缘(Edges)      | EdgesGeometry                                    |
+| 线框图(Wireframe)            | WireframeGeometry                                |
 
-一共有 21 种内置的图元。
+一共有 22 种内置的图元。
 
 > 上面表格中关于图元的中文名字，有些是我根据含义自己编的，我已经尽量靠近英文原意。  
 > 不同文章或教程可能对同一图元的称呼略微不同。
@@ -77,7 +80,9 @@ Primitive 的复数即为 Primitives。
 
 ### BufferGeometry 与 Geometry 的区别
 
-从上面的图元表格中不难发现，除了最后一项 Edges 以外，其他图元的构造函数都是成对出现的。
+从上面的图元表格中不难发现，除了 Edges、WireframeGeometry 以外，其他图元的构造函数都是成对出现的。
+
+**虽然 EdgesGeometry、WireframeGeometry 名字中并未出现 “Buffer”，但和其他所有包含 “Buffer” 字样的图元一样，他们都继承于 BufferGeometry。**
 
 | 差异之处                 | BufferGeometry | Geometry                                                     |
 | ------------------------ | -------------- | ------------------------------------------------------------ |

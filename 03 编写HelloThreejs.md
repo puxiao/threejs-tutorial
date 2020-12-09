@@ -10,16 +10,31 @@
 
 ### 第1环节：引入Three.js
 
-**引入方式1：将Three.js一次全部引入**
+**引入方式1：将 THREE 一次全部引入**
 
 ```
-import Three from 'three'
+import THREE from 'three'
 
 //当需要使用某个具体的模块时，例如创建场景，则代码如下
-const scene = new Three.Scene()
+const scene = new THREE.Scene()
 ```
 
 > 这种方式会将所有 Three.js 相关模块都引入进来，虽然引入代码简介，但是会造成项目打包输出时文件过大，因此并不建议这样引入。
+
+
+
+**请注意：默认 three 模块导出的名字就是全部大写的 “THREE”。我个人非常不习惯 模块名称 全部大写，我的代码习惯是使用 “Three”。**
+
+```
+import * as Three from 'three'
+
+const scene = new Three.Scene()
+```
+
+> **本系列文章中使用的示例，代码绝大多数都采用这种引入形式，使用 Three 而 不使用 THREE。  
+> 所以网上一些教程中可能描述某个类时使用的是 THREE.Xxxx，而我在本系列文章中都会使用 Three.Xxxx 这种方式。**
+
+
 
 **引入方式2：按需引入模块**
 

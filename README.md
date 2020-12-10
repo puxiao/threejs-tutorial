@@ -6,7 +6,7 @@
 
 ## 我的学习资料
 我刚开始学习 three.js，目前主要看以下 4 个网站教程为主：
-* [threejs.org：官方教程](https://threejsfundamentals.org/threejs/lessons/zh_cn/)
+* [threejs.org：官方教程](https://threejsfundamentals.org/threejs/lessons/zh_cn/) (该教程只有前几篇是有中文翻译的)
 * [hewebgl.com：Three.js基础教程](http://www.hewebgl.com/article/articledir/1)
 * [webgl3d.cn：Three.js教程](http://www.webgl3d.cn/Three.js/)
 * [threejs.org：官方中文文档](https://threejs.org/docs/index.html#manual/zh/introduction/Creating-a-scene)
@@ -20,9 +20,9 @@
 
 **综上所述**
 
-1. 我会在以上教程、文档，以及我搜集到的其他相关教程基础上，来编写本系列 Three.js 教程。
-
-2. 我会以一个新手的视角，心路历程，来编写本系列 Three.js 教程。
+1. 我会以官方教程(https://threejsfundamentals.org/threejs/lessons/zh_cn/) 为主线。
+2. 我会在以上教程、文档，以及我搜集到的其他相关教程基础上，来编写本系列 Three.js 教程。
+3. 我会以一个新手的视角，心路历程，来编写本系列 Three.js 教程。
 
 
 

@@ -135,7 +135,7 @@ const url = 'https://threejsfundamentals.org/threejs/resources/threejs/fonts/hel
 
 
 
-## 示例1：编写一个最简单的纹理示例
+## 示例1：加载一张图，实现一个有贴图的立方体
 
 #### 示例目标
 
@@ -241,7 +241,7 @@ export default HelloTexture
 
 
 
-## 示例2：实现一个骰子
+## 示例2：加载多张图片，实现一个骰子
 
 在上面的示例中，我们是加载了一张图片资源，然后立方体默认 6 个面都采用这张图来进行贴图渲染。
 
@@ -368,3 +368,115 @@ scene.add(mesh)
 简而言之就是 对立面 2 边的数字相加必须等于 7。
 
 如果想模拟出真实的骰子数字分布，那么就要按照这个规则去修改图片编号对应的图片数字。
+
+
+
+### 加载多张图作为材质的补充说明：
+
+上面示例 2 中演示了 加载 6 张图，并贴合到 立方体的 6 个面上。现在，我们思考以下几个问题。
+
+
+
+**问题1：假设立方体 6 个面，但是材质只有 5 个 或者 4 个，会出现什么情况呢？**
+
+答：缺少 N 个面的材质，立方体就会有 N 个面直接显示为空白，当然你也可以说显示为 “透明”、"缺失"。
+
+
+
+**创建网格时：**
+
+* **若 Three.Mesh(xx,xx) 构造函数中第 2 个参数值是 单个 材质，则图元实例上所有的面均采用该材质(纹理)**
+* **若第 2 个参数值是 材质组成的数组，则该数组中材质数量不能少于图元实例各个可渲染面的数量。**
+
+
+
+**问题2：立方体是 6 个可渲染的面，那其他图元都有几个可渲染的面？**
+
+答：**支持多个材质纹理的图元，可需要渲染的面数量也不同**，例如圆锥体只需要 2 个面(圆锥侧面、圆锥底面)、圆柱体 一共 3 个面，也就是需要 3 个材质贴图(圆柱上下 2 个底 + 圆柱侧面)。
+
+不是所有材质都支持多个材质纹理的，例如平面圆(CircleBufferGeometry)、平面矩形(PlaneBufferGeometry) 都仅只支持 1 个材质纹理。
+
+
+
+**问题3：Three.js 纹理是否支持精灵图(雪碧图)？**
+
+> 精灵图也被称为雪碧图，比如在网页 CSS 中，可以将多个小图标图片合并放在一张图片上，当不同地方需要使用不同的图标图片时，通过设置图片中的图标对应的位置来只显示该图标。
+>
+> 这样做的好处是可以让 N 个小图片资源请求 合并为 1 个图片资源请求，降低服务器请求压力。
+
+答：**Three.js 纹理是完全支持 精灵图(雪碧图) 的。**
+
+实现方式就是将多张图片合并成一张图片，然后创建成一个 纹理图集(texture atlas)，具体的做法会在之后学习的 构建自定义几何图形时讲解。
+
+
+
+## 示例3：纹理加载器的不同事件回调函数
+
+让我们在回到 示例1 的代码中，关于纹理加载器的代码片段：
+
+```
+//创建一个 纹理加载器
+const loader = new Three.TextureLoader()
+/创建一个材质，材质的 map 属性值为 纹理加载器加载的图片资源
+const material = new Three.MeshBasicMaterial({
+  map: loader.load(require('@/assets/imgs/mapping.jpg').default)
+})
+```
+
+上述代码中，我们只是设置了加载图片资源的文件路径，并没有添加图片加载相关的事件处理回调函数。
+
+关于纹理加载器 load()，相应的 .d.ts 定义为：
+
+```
+TextureLoader.load(
+  url: string, 
+  onLoad?: ((texture: Three.Texture) => void) | undefined, 
+  onProgress?: ((event: ProgressEvent<EventTarget>) => void) | undefined, 
+  onError?: ((event: ErrorEvent) => void) | undefined
+): Three.Texture
+```
+
+为了显示更多纹理图片加载过程中的细节，我们可以将代码修改为：
+
+```
+//创建一个 纹理加载器
+const loader = new Three.TextureLoader()
+const material = new Three.MeshBasicMaterial({
+  map: loader.load(require('@/assets/imgs/mapping.jpg').default,
+  (texture: Three.Texture) => {
+      console.log('纹理图片加载完成')
+      console.log(texture)
+      console.log(texture.image.currentSrc) //此处即图片实际加载地址
+    },
+    (event: ProgressEvent<EventTarget>) => {
+      console.log('纹理图片加载中...')
+      console.log(event)
+    },
+    (error: ErrorEvent) => {
+      console.log('纹理图片加载失败！')
+      console.log(error)
+    }
+  )
+})
+```
+
+**请注意：**
+
+1. 在项目调试过程中，由于图片资源位于本地，所以加载所需时间极其短暂。
+
+2. 若项目加载的是网络图片资源，但是由于目前一般网速都比较快，一张100K 左右的图片下载所需时间非常短暂，所以可能在即运行中，根本触发不了 onProgress 处理函数。
+
+   > 此处是存疑的，因为按照我的理解，就算是图片资源加载再快，onProgress 回调函数至少也应该执行一次才对的，可事实是onProgress 回调函数一次也没有被调用。
+
+
+
+**补充说明：谷歌浏览器网络调试**
+
+为了能够模拟出网络加载速度较慢的情况，可以通过设置 谷歌浏览器 调试工具中的 网络面板。
+
+1. 勾选上 Disable cache (禁用缓存)
+2. 将网络由 Online 修改为自定义网络网速模式，在创建的自定义网速模式中可是设置下载或上传的网速。
+
+
+
+## 示例4：使用纹理加载管理器监控多个图片资源的加载

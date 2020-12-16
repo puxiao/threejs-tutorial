@@ -88,13 +88,13 @@
 
 ### 场景的几个概念
 
-#### 概念1：一个局部的相对空间，即为一个场景
+### 概念1：一个局部的相对空间，即为一个场景
 
 例如太阳系就是一个空间(场景)
 
 
 
-#### 概念2：一个空间(场景) 又可能是由 几个子空间(场景) 组合而成
+### 概念2：一个空间(场景) 又可能是由 几个子空间(场景) 组合而成
 
 太阳系由 8 大行星构成
 
@@ -106,7 +106,101 @@
 
 
 
-#### 概念3：一个子空间(场景)只需要关注和他最紧密相关的空间即可
+### 概念3：表面上添加某场景，但实际上执行的是合并场景
+
+例如 sceneA.add(sceneB)，表面上看 sceneA 添加了 sceneB，sceneB 称为了 sceneA 的子场景，但事实上根本并不是这样！
+
+**什么？这岂不是和 概念 2 完全相悖？**
+
+**没错！确实是即合并又互相独立。**
+
+**所谓独立：sceneB 中的元素(物体、灯光)的坐标位置继续保持独立**
+
+**所谓合并：sceneB中的元素(物体、灯光)被复制添加到其他场景中，例如 灯光B 不仅 出现并照射 sceneB 中的物体，还会出现并照射 sceneA 中的物体**
+
+
+
+**举一个很容易犯错的例子：**
+
+假设有 灯光 lightB、lightC，和 场景 sceneA、sceneB、sceneC
+
+```
+sceneB.add(lightB) //场景B 中添加 灯光B
+sceneC.add(lightC) //场景C 中添加 灯光C
+
+sceneA.add(sceneB) //场景A 中添加 场景B
+sceneA.add(sceneC) //场景A 中添加 场景C
+
+renderer.render(sceneA,camera) //使用场景渲染器，将 场景A 渲染出来
+```
+
+**你可能以为 灯光B 只在 场景B 中起作用、灯光C 只在 场景C 中起作用。**
+
+**但事实根本不是这样，上面代码渲染过后，你会发现：场景B 和 场景C 中，分别都会有 灯光B 和 灯光C。**
+
+**注意不是 灯光B 用余光照射到了 场景C，而是两个场景中分别都会拥有灯光B 和灯光C。**
+
+惊不惊喜，意不意外！
+
+
+
+**为什么会这样？**
+
+我们查看一下 scene.add() 函数源码：
+
+> 注意：Scene 继承于 Object3D，所以 scene.add() 方法实际上是由 Object3D 定义的。
+
+```
+add: function (object) {
+
+    if (arguments.length > 1) {
+        for (let i = 0; i < arguments.length; i++) {
+            this.add(arguments[i]);
+        }
+        return this;
+    }
+
+    if (object === this) {
+        console.error("THREE.Object3D.add: object can't be added as a child of itself.", object);
+        return this;
+    }
+
+    if ((object && object.isObject3D)) {
+        if (object.parent !== null) {
+            object.parent.remove(object);
+        }
+
+        object.parent = this;
+        this.children.push(object);
+
+        object.dispatchEvent(_addedEvent);
+
+    } else {
+        console.error("THREE.Object3D.add: object not an instance of THREE.Object3D.", object);
+    }
+    return this;
+}
+```
+
+**源码分析：**
+
+1. if (object.parent !== null) { object.parent.remove(object);  } //如果元素(物体、灯光)拥有父级，则将该元素从父级中删除
+2. object.parent = this; //将元素(物体、灯光)的父级指向 this(自己)
+3. this.children.push(object); //将元素(物体、灯光)添加到自己场景中的 children 中
+
+经过以上 3 步操作，**add() 函数实现了 将 子场景元素拆散、合并到自己(最外层场景、顶场景)中**。
+
+
+
+**假设我就希望灯光是独立的，怎么解决？**
+
+具体造成这个原因和阻止灯光影响其他子场景的办法，我暂时还没学习到，此处先做保留。
+
+但是你一定要先记住我上面那个结论。
+
+
+
+### 概念4：一个子空间(场景)只需要关注和他最紧密相关的空间即可
 
 假设你此刻在家里，那么你的相对空间就只针对家里即可，尽管你此刻所处的地球正在自转，你无需关心这个事情。
 
@@ -114,7 +208,7 @@
 
 
 
-#### 概念3引申出来的另外一个概念：通过空间嵌套来改变原有的相对状态
+#### 概念4引申出来的另外一个概念：通过空间嵌套来改变原有的相对状态
 
 * **一个 空间A 嵌套进入另外一个 空间B，此时 空间A 将会拥有 空间B 的一些属性，例如 空间A 会随着 空间B 一起缩放**
 * **两个子空间 A和B 都嵌套进另外一个空间 C，此时 空间A、空间B 相对独立且共存**

@@ -14,14 +14,14 @@
 
 **在 Three.js 中，有 6 种类型的灯光，他们都继承于 Three.Light 。**
 
-| 灯光类型(都继承于Light) | 灯光名称           | 是否产生阴影 |
-| ----------------------- | ------------------ | ------------ |
-| AmbientLight            | 环境光、氛围光     | 否           |
-| DirectionalLight        | 平行光             | 是           |
-| HemisphereLight         | 半球光源、户外光源 | 否           |
-| PointLight              | 点光源可以         | 是           |
-| RectAreaLight           | 矩形面光源         | 否           |
-| SpotLight               | 聚光灯光源         | 是           |
+| 灯光类型(都继承于Light) | 灯光名称           | 是否产生阴影 | 是否作用于全局(无处不在) |
+| ----------------------- | ------------------ | ------------ | ------------------------ |
+| AmbientLight            | 环境光、氛围光     | 否           | 是                       |
+| DirectionalLight        | 平行光             | 是           | 否                       |
+| HemisphereLight         | 半球光源、户外光源 | 否           | 是                       |
+| PointLight              | 点光源可以         | 是           | 否                       |
+| RectAreaLight           | 矩形面光源         | 否           | 否                       |
+| SpotLight               | 聚光灯光源         | 是           | 否                       |
 
 > 有个别文档或教程中，会把 HemisphereLight 也称呼为 “环境光”。  
 > 事实上 AmbientLight 和 HemisphereLight 的作用都是提供环境光，只是 HemisphereLight 的环境光更加真实，当然渲染所需性能也更多。

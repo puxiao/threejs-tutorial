@@ -153,7 +153,7 @@ const HelloThreejs: React.FC = () => {
             //创建光源
             const light = new DirectionalLight(0xFFFFFF, 1)
             light.position.set(-1, 2, 4)
-            scene.add(light)//将光源添加到场景中
+            scene.add(light)//将光源添加到场景中，若场景中没有任何光源，则可反光材质的物体渲染出的结果是一片漆黑，什么也看不见
 
             //设置透视镜头的Z轴距离，以便我们以某个距离来观察几何体
             //之前初始化透视镜头时，设置的近平面为 0.1，远平面为 5

@@ -67,14 +67,14 @@
 
 #### 自定义材质
 
-| 材质名称          | 解释说明 |
-| ----------------- | -------- |
-| ShaderMaterial    |          |
-| RawShaderMaterial |          |
+| 材质名称          | 解释说明       |
+| ----------------- | -------------- |
+| ShaderMaterial    | 着色器材质     |
+| RawShaderMaterial | 原始着色器材质 |
 
 
 
-注意：本文只是大体上讲解一些 Three.js 中的各个材质特性，具体每个材质的详细参数和用法，需要自己查阅 Three.js 官方文档：https://threejs.org/docs/index.html
+注意：本文只是大体上讲解一些 Three.js 中的各个材质特性，具体每个材质的详细参数和用法，需要自己查阅 Three.js 官方文档：https://threejs.org/docs/index.html#api/zh/materials/Material
 
 
 

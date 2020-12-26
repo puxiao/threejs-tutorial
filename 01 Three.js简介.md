@@ -12,6 +12,13 @@ Three.js 是基于 WebGL 技术，用于浏览器中开发 3D 交互场景的 JS
 
 
 
+**Three.js优缺点**
+
+* Three.js 擅长 WebGL 场景渲染，作为 JS 类库特别原生、灵活、自由度高
+* Three.js 不擅长物理碰撞，因此不适合开发 3D 游戏
+
+
+
 **先感受几个Three.js示例**
 
 * 3D沙发产品在线预览：http://app.xuanke3d.com/apps/trayton/#/show

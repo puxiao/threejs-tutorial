@@ -30,7 +30,7 @@
 | AmbientLight            | 环境光、氛围光     | 否           | 是                       | 无             |
 | DirectionalLight        | 平行光             | 是           | 否                       | 有             |
 | HemisphereLight         | 半球光源、户外光源 | 否           | 是                       | 无             |
-| PointLight              | 点光源可以         | 是           | 否                       | 有             |
+| PointLight              | 点光源             | 是           | 否                       | 有             |
 | RectAreaLight           | 矩形面光源         | 否           | 否                       | 无             |
 | SpotLight               | 聚光灯光源         | 是           | 否                       | 有             |
 
@@ -52,6 +52,24 @@
 其他种类的光，都支持阴影：DirectionalLight、PointLight、SpotLight
 
 关于 Three.js 中的 阴影 (LightShadown、DirectionalLightShadown、PointLightShadown、SpotLightShadown)，我们会在后面单独开辟一节来讲解。
+
+
+
+**关于“阴影”的进一步补充：**
+
+在之前所有的示例中，当场景上有反光物体且有灯光时，物体会产生明暗，但是请注意：
+
+1. 这个“物体显示出的明暗”并不是真正的“阴影”。
+
+   > 在 Three.js 中 有真正的阴影对象，这个会在后面的 “Three.js基础之阴影”  一文中有详细说明。
+
+2. 这个“物体显示出的明暗”并不是完全符合我们日常的“光影明暗”。
+
+   > 这是因为我们目前所有示例都使用的是“简单光照模型”，也就是说光照射在物体上后并不进行漫反射，所以渲染出的“明暗”并不完全自然合理。
+
+3. 默认渲染器并不会渲染阴影、默认支持阴影的灯光也不会投射阴影，若想产生真正的阴影，还需开启阴影渲染和投射。
+
+   > 具体如何开启，也会在后面的 “Three.js基础之阴影”  一文中有详细说明。
 
 
 

@@ -26,6 +26,10 @@
 
 
 
+#### 特别强调：你无需创建阴影实例，阴影实例是由 灯光 内部创建的。
+
+
+
 #### 阴影贴图
 
 默认情况下 Three.js 使用阴影贴图来绘制阴影。
@@ -167,10 +171,11 @@ for(let i = 0; i<numSphere; i++){
 
 #### 示例代码
 
+我们创建 src/components/hello-fake-shadow/index.tsx 文件。
+
 ```
 import { useRef, useEffect } from 'react'
 import * as Three from 'three'
-import { PlaneBufferGeometry } from 'three'
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
@@ -222,7 +227,7 @@ const HelloFakeShadow = () => {
             side: Three.DoubleSide
         })
         planeMaterial.color.setRGB(1.5, 1.5, 1.5) //在纹理图片颜色的RGB基础上，分别乘以 1.5，这样可以不修改纹理图片的前提下让纹理图片更加偏白一些
-        const planeGeo = new PlaneBufferGeometry(planeSize, planeSize)
+        const planeGeo = new Three.PlaneBufferGeometry(planeSize, planeSize)
         const mesh = new Three.Mesh(planeGeo, planeMaterial)
         mesh.rotation.x = Math.PI * -0.5
         scene.add(mesh)
@@ -341,6 +346,464 @@ export default HelloFakeShadow
 > 事实上这是 Three.js 的一个特点，也是缺点
 
 > 若开发 3D 游戏类，通常并不会选择 Three.js，会选择其他 3D 游戏引擎，例如：Babylon.js、PlayCanvas.js
+
+
+
+## 平行光阴影(DirectionalLightShadow)示例：HelloShadow
+
+#### 示例目标：
+
+1. 一个黑白相间的地面上，放置有 一个立方体和一个球体
+
+2. 场景中有一个 平行光源
+
+3. 地面上显示出 立方体和球体 真正的阴影
+
+   > 这里说的阴影是真的阴影对象，而不是“物体显示出的明暗”或“像 HelloFakeShadow 那样假的阴影”
+
+4. 为了方便我们观察，场景中需要添加：灯光的辅助对象、镜头的辅助对象、“阴影的辅助对象”
+
+   > 请注意 “阴影的辅助对象”其实是加上了双引号，事实上并不存在阴影的辅助对象，这里的辅助对象实际上指的是 “灯光中对应的阴影镜头的辅助对象”。
+
+
+
+#### 代码思路：
+
+**1、基础场景的搭建**
+
+这个场景在之前示例中已经反复出现了，不再过多讲述。
+
+**2、阴影的相关设置有哪些？**
+
+1. 渲染器(WebGLRenderer)开启渲染阴影
+
+   ```
+   renderer.shadowMap.enable = true
+   ```
+
+2. 平行灯光(DirectionalLight)开启投射阴影
+
+   ```
+   light.castShadow = true
+   ```
+
+3. 地面开启 接收投影
+
+   ```
+   planeMesh.receiveShadow = true
+   ```
+
+4. 立方体和球体都开启 接收和投射阴影
+
+    ```
+   boxMesh.castShadow = true
+   boxMesh.receiveShadow = true
+   
+   sphereMesh.castShadow = true
+   sphereMesh.receiveShadow = true
+    ```
+
+**3、阴影的辅助对象？**
+
+灯光、镜头 的辅助对象在之前章节中，已经使用过了，那么说一下 “阴影的辅助对象”。
+
+首先在 Three.js 中根本不存在阴影的辅助对象，“阴影的辅助对象”其实是我个人想出来的一个词。
+
+这个所谓的“阴影的辅助对象”其实是 灯光中阴影的镜头对应的辅助对象。
+
+> 目的是为了方便我们通过灯光的辅助对象来观察灯光所能投射的阴影可见区域。
+
+```
+const shadowCamera = light.shadow.camera
+const shadowHelper = new Three.CameraHelper(shadowCamera)
+scene.add(shadowHelper)
+```
+
+**4、修改灯光中阴影的镜头属性，覆盖住所有物体，好让阴影显示完整**
+
+如果你在编写示例时发现物体在地面上的影子显示不完整(看着影子似乎被裁切掉了一部分)，那么这种情况多数原因就是 灯光中阴影的镜头照着范围不足以覆盖物体，所以才出现了影子被裁切掉的情况。
+
+在本示例中，我们就需要手工修改阴影镜头视椎的可见范围，让视椎刚好可以覆盖住物体。同时我们要尽量保证视椎又不是特别大，而是刚好比较合适的大小。
+
+特别强调：
+
+1. 平行光中影子(DirectionalLightShadow)的镜头使用的是 OrthographicCamera，不是 PerspectiveCamera
+2. 其他 2 种阴影 PointLightShadow、SpotLightShadow 镜头默认使用的是 PerspectiveCamera。
+3. 因此在本示例中，当我们要修改 阴影的镜头覆盖区域时修改的是 OrthographicCamera 的 left、right、top、bottom 属性。
+
+```diff
+const shadowCamera = light.shadow.camera
++ shadowCamera.left = -10
++ shadowCamera.right = 10
++ shadowCamera.top = 10
++ shadowCamera.bottom = -10
++ shadowCamera.updateProjectionMatrix()
+
+const shadowHelper = new Three.CameraHelper(shadowCamera)
+scene.add(shadowHelper)
+```
+
+> 经过修改后的视椎，实际宽 20、高 20
+
+在本示例中我们添加的 shadowHelper 事实上就是为了方便我们观察视椎是否完全覆盖住了物体。
+
+> 这里我们先提出一个问题：为了省事我们是否可以直接将阴影镜头视椎的范围设置成特别大，这样就不用担心万一物体不在视椎范围里了。可以这样做吗？
+>
+> 答案是：不可以！
+>
+> 至于为什么，会在后面详细讲述。
+
+
+
+#### 注意事项：
+
+1. 在 假阴影示例(HelloFakeShadow)中，我们将 地面平台使用的是不反光材质 MeshBasicMaterial，但是在本示例中，需要将地面平台设置为可反光材质 MeshPhoneMaterial。
+
+   > 如果地面平台材质继续使用 MeshBasicMaterial，则永远显示不出阴影。
+
+2. 再次强调一遍，你无需要创建 DirectionalLightShadow 实例，阴影实例是由 灯光(DirectionalLight) 内部创建的。
+
+3. 目前我们一直采用的是 简单光照模型，所以物体的阴影是正确的，但是物体的明暗与实际生活中的效果在某些地方略微不同，说直白点就是有些地方的明暗不符合自然现象。
+
+4. 由于场景中添加了 镜头交互对象 OrbitControls，所以在每次渲染时，也要将 各个辅助对象进行更新。
+
+   ```
+   const render = () => {
+     cameraHelper.update()
+     lightHelper.update()
+     shadowHelper.update()
+     ...
+   }
+   ```
+
+
+
+#### 示例代码：
+
+示例代码位于 src/components/hello-shadow/index.stx
+
+```
+import { useEffect, useRef } from 'react'
+import * as Three from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+
+import './index.scss'
+
+const HelloShadow = () => {
+
+    const canvasRef = useRef<HTMLCanvasElement>(null)
+
+    useEffect(() => {
+        if (canvasRef.current === null) {
+            return
+        }
+
+        const renderer = new Three.WebGLRenderer({ canvas: canvasRef.current })
+        renderer.shadowMap.enabled = true
+
+        const scene = new Three.Scene()
+        scene.background = new Three.Color(0x333333)
+
+        const camera = new Three.PerspectiveCamera(45, 2, 5, 100)
+        camera.position.set(0, 10, 20)
+        scene.add(camera)
+
+        const helperCamera = new Three.PerspectiveCamera(45, 2, 5, 100)
+        helperCamera.position.set(20, 10, 20)
+        helperCamera.lookAt(0, 5, 0)
+        scene.add(helperCamera)
+
+        const cameraHelper = new Three.CameraHelper(helperCamera)
+        scene.add(cameraHelper)
+
+        const controls = new OrbitControls(camera, canvasRef.current)
+        controls.target.set(0, 5, 0)
+        controls.update()
+
+        const light = new Three.DirectionalLight(0xFFFFFF, 1)
+        light.castShadow = true
+        light.position.set(0, 10, 0)
+        light.target.position.set(-4, 0, -4)
+        scene.add(light)
+        scene.add(light.target)
+
+        const shadowCamera = light.shadow.camera
+        shadowCamera.left = -10
+        shadowCamera.right = 10
+        shadowCamera.top = 10
+        shadowCamera.bottom = -10
+        shadowCamera.updateProjectionMatrix()
+
+        const lightHelper = new Three.DirectionalLightHelper(light)
+        scene.add(lightHelper)
+
+        const shadowHelper = new Three.CameraHelper(shadowCamera)
+        scene.add(shadowHelper)
+
+        const planeSize = 40
+
+        const loader = new Three.TextureLoader()
+        const texture = loader.load(require('@/assets/imgs/checker.png').default)
+        texture.wrapS = Three.RepeatWrapping
+        texture.wrapT = Three.RepeatWrapping
+        texture.magFilter = Three.NearestFilter
+        texture.repeat.set(planeSize / 2, planeSize / 2)
+
+        const planGeo = new Three.PlaneBufferGeometry(planeSize, planeSize)
+        const planeMat = new Three.MeshPhongMaterial({
+            map: texture,
+            side: Three.DoubleSide
+        })
+        const planeMesh = new Three.Mesh(planGeo, planeMat)
+        planeMesh.receiveShadow = true
+        planeMesh.rotation.x = Math.PI * -0.5
+        scene.add(planeMesh)
+
+        const material = new Three.MeshPhongMaterial({
+            color: 0x88AACC
+        })
+        const boxMat = new Three.BoxBufferGeometry(4, 4, 4)
+        const boxMesh = new Three.Mesh(boxMat, material)
+        boxMesh.castShadow = true
+        boxMesh.receiveShadow = true
+        boxMesh.position.set(5, 3, 0)
+        scene.add(boxMesh)
+
+        const sphereMat = new Three.SphereBufferGeometry(3, 32, 16)
+        const sphereMesh = new Three.Mesh(sphereMat, material)
+        sphereMesh.castShadow = true
+        sphereMesh.receiveShadow = true
+        sphereMesh.position.set(-4, 5, 0)
+        scene.add(sphereMesh)
+
+        const render = () => {
+            cameraHelper.update()
+            lightHelper.update()
+            shadowHelper.update()
+
+            renderer.render(scene, camera)
+            window.requestAnimationFrame(render)
+        }
+        window.requestAnimationFrame(render)
+
+        const handleResize = () => {
+            if (canvasRef.current === null) {
+                return
+            }
+
+            const width = canvasRef.current.clientWidth
+            const height = canvasRef.current.clientHeight
+
+            camera.aspect = width / height
+            camera.updateProjectionMatrix()
+
+            renderer.setSize(width, height, false)
+        }
+        handleResize()
+        window.addEventListener('resize', handleResize)
+
+        return () => {
+            window.removeEventListener('resize', handleResize)
+        }
+    }, [canvasRef])
+
+    return (
+        <canvas ref={canvasRef} className='full-screen' />
+    )
+}
+
+export default HelloShadow
+```
+
+以上代码正常运行后，这会在地面上显示出比较清晰、比较黑的物体影子。
+
+
+
+#### 回顾之前提出的问题：为什么阴影镜头的视椎既要覆盖物体，又要范围合适，不要过大？
+
+先不解释为什么，我们可以先尝试将阴影镜头的视椎修改得比较大，例如扩大 10 倍，然后看会发生什么？
+
+```diff
+- shadowCamera.left = -10
+- shadowCamera.right = 10
+- shadowCamera.top = 10
+- shadowCamera.bottom = -10
+
++ shadowCamera.left = -100
++ shadowCamera.right = 100
++ shadowCamera.top = 100
++ shadowCamera.bottom = -100
+```
+
+当阴影视椎变得比较大，此时运行，实际渲染中会发现——物体在地面上的阴影变得不够平滑、有类似马赛克的块状效果，这是为什么？
+
+答：默认阴影贴图尺寸(shadow mapSize) 为 512 x 512，当灯光中阴影镜头视椎范围越大，所需要对应的阴影贴图尺寸也要越大。当视椎特别大而阴影贴图尺寸并不足够大时就会产生这种块状阴影。
+
+当然你可以通过修改 `light.shadow.mapSize.widht` 和 `light.shadow.mapSize.height` 的值，将属性值调大(默认是512)。这样看似可以解决阴影块状问题，但是当阴影贴图尺寸越大，对应渲染所需的计算和性能也就越大，这并不是我们希望的效果。
+
+所以，**最简单的方式就是不要将视椎范围调整得过大**，让视椎可覆盖物体但有不是特别大，这才是我们应该做的。
+
+> 事实上是视椎和阴影贴图尺寸 越合适、越贴近，阴影渲染的效果越好。
+
+
+
+**补充说明：阴影贴图尺寸最大能设置为多少？**
+
+答：渲染器中 `renderer.capabilities.maxTextureSize`  的值就是渲染器可支持的贴图最大尺寸。
+
+
+
+#### 如何让影子不那么黑，显示得比较淡一些？
+
+我们是无法直接修改影子的明暗度，但是可以通过给场景中添加一个半球环境光，让场景整体更加亮一些，从而影子也就变得淡了一些。
+
+```diff
+const renderer = new Three.WebGLRenderer({ canvas: canvasRef.current })
+renderer.shadowMap.enabled = true
++ renderer.physicallyCorrectLights = true
+
+...
+
+//添加半球环境光
++ const hemisphereLight = new Three.HemisphereLight(0xFFFFFF, 0x000000, 2)
++ scene.add(hemisphereLight)
+```
+
+
+
+## 聚光灯阴影(SpotLightShadow)示例
+
+我们将在平行光阴影示例的基础上，修改成 聚光灯阴影示例。
+
+注意：
+
+1. 为了方便我们观察聚光灯阴影，我们将不添加 半球环境光。
+2. 聚光灯阴影对应的镜头为 PerspectiveCamera，这种镜头上我们没有必要再去修改视椎范围
+
+修改后的代码如下：
+
+```diff
+const renderer = new Three.WebGLRenderer({ canvas: canvasRef.current })
+renderer.shadowMap.enabled = true
+- renderer.physicallyCorrectLights = true
+
+- const hemisphereLight = new Three.HemisphereLight(0xFFFFFF, 0x000000, 2)
+- scene.add(hemisphereLight)
+
+- const light = new Three.DirectionalLight(0xFFFFFF, 1)
++ const light = new Three.SpotLight(0xFFFFFF, 1)
+light.castShadow = true
+...
+
+const shadowCamera = light.shadow.camera
+-  shadowCamera.left = -10
+-  shadowCamera.right = 10
+-  shadowCamera.top = 10
+-  shadowCamera.bottom = -10
+shadowCamera.updateProjectionMatrix()
+
+-  const lightHelper = new Three.DirectionalLightHelper(light)
++  const lightHelper = new Three.SpotLightHelper(light)
+scene.add(lightHelper)
+```
+
+
+
+## 点光源阴影(PointLightShadow)示例
+
+#### 点光源(PointLight)的特殊之处：
+
+点光源是朝着四面八方发射光的，也就是说相当于朝着 上、下、左、右、前、后 6 个面都发光，这就意味着它会在这 6 个面上都产生阴影。
+
+> 平行光、聚光灯 他们 都只会朝着一个方向发射光，且只产生一个面上的阴影。
+
+也就是说 点光源阴影 渲染一次(实际是渲染 6 个面的阴影)要比别的阴影类型计算量更大、渲染所需时间多。
+
+
+
+#### 示例的特殊改动之处：
+
+由于之前示例中，我们只有一个 地面，而 点光源阴影会在 6 个面中都投射阴影，所以我们需要改造我们的场景。
+
+向场景中添加其他几个面，以便我们看到不同面上的阴影。
+
+**如何添加 6 个面？**
+
+答：我们只需在场景中添加一个尺寸更大一点的一个立方体，为了方便和之前的立方体做区分，我们暂且将这个立方体称呼为 room。
+
+我们需要做的事情是：
+
+1. 将 room 嵌套住原本的立方体和球体
+
+2. 将 room 的材质的 side 设置为 Three.BackSide，这样渲染器就会渲染该物体的内部，而不是外部。
+
+   > 由于原本的立方体、球体、点光源 均被包裹 在 room 中，所以我们就会看到 他们 在 room 内部各个面上的投影。
+
+   > 这里所说的 “被包裹” 其实只不是 他们(立方体、球体)尺寸比较小，且位置(立方体、球体、点光源)坐标刚好位于 room 内部而已。
+
+
+
+#### 具体的代码：
+
+我们将代码放置于 scr/components/hello-shadow/hello-point-light-shadow.tsx
+
+这次我们以 聚光灯阴影(SpotLightShadow)示例 来做修改说明：
+
+```diff
+- light = new Three.DirectionalLight(0xFFFFFF, 1)
++ const light = new Three.PointLight(0xFFFFFF, 1)
+light.castShadow = true
+light.position.set(0, 10, 0)
+- light.target.position.set(-4, 0, -4)
+scene.add(light)
+- scene.add(light.target)
+
+- const lightHelper = new Three.SpotLightHelper(light)
++ const lightHelper = new Three.PointLightHelper(light)
+
+//新增 room 立方体
++ const roomMat = new Three.MeshPhongMaterial({
++   color:0xCCCCCC,
++   side:Three.BackSide //注意此处的设置
++ })
++ const roomGeo = new Three.BoxBufferGeometry(30,30,30)
++ const roomMesh = new Three.Mesh(roomGeo,roomMat)
++ roomMesh.receiveShadow = true //作为背景墙面，只需接收阴影，无需设置 投射阴影(castShadow)
++ roomMesh.position.set(0,14.9,0) //这个 y 值 14.9 是有玄机的，稍后解释
++ scene.add(roomMesh)
+```
+
+编译运行，就可以看到 球体 在地面和某个侧面上的阴影。
+
+
+
+#### 注意：为什么物体下方显示的阴影 是在地面(planeMesh)而不是 roomMesh 的底面？
+
+究竟显示 地面还是 room 的底面，这个完全取决于 地面(planeMesh)、roomMesh 的相对位置，谁位置更加靠上就显示谁。
+
+由于 room 的高度为 30，高度的一半为 15，为了避免 地面和room 的底面 不分高低，所以我们故意将 roomMesh 的 position.y 的值设置为 14.9。
+
+这样可以十分明确 地面 高于 roomMesh 的底面，所以我们看到的就是地面。
+
+
+
+若将上面的代码，修改为：
+
+```
+roomMesh.position.set(0,15.1,0)
+```
+
+此时 roomMesh 底面在 地面 之上，所以渲染后只会看到 roomMesh 的底面，看不见地面了。
+
+
+
+**在实际的场景中，确实避免 2 个面极度紧贴，是会选择将其中一个面的位置故意设置偏低一些，保证 Three.js 能够明确区分出 哪个面谁在上谁在下。**
+
+
+
+至此，关于阴影我们就学习到此。
+
+下一节学习一个特殊场景——雾，充满雾气的场景。
 
 
 

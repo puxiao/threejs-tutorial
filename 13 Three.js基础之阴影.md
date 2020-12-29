@@ -401,7 +401,7 @@ export default HelloFakeShadow
    
    sphereMesh.castShadow = true
    sphereMesh.receiveShadow = true
-    ```
+   ```
 
 **3、阴影的辅助对象？**
 
@@ -740,6 +740,18 @@ scene.add(lightHelper)
    > 由于原本的立方体、球体、点光源 均被包裹 在 room 中，所以我们就会看到 他们 在 room 内部各个面上的投影。
 
    > 这里所说的 “被包裹” 其实只不是 他们(立方体、球体)尺寸比较小，且位置(立方体、球体、点光源)坐标刚好位于 room 内部而已。
+
+
+
+#### 补充说明：
+
+尽管 room 是 6 个面，但是实际渲染的结果，正对着你视觉的那些面是不会被渲染出来的。
+
+> 视觉正对着的面，有可能是 1 个，也有可能是 2 个、3 个，这完全取决于你观察的视觉角度。
+
+因为如果这个面也被渲染，那你实际上是看不到 room 内部的，这不是我们希望的。
+
+> 因为我们 room 材质里设定的是 side:Three.BackSide
 
 
 

@@ -239,4 +239,4 @@ colors.forEach((color, index) => {
 
 这一节可能是最近一系列文章中，最简单的一篇了。
 
-下一节，讲解 渲染目标(render target)
+下一节，讲解 离屏渲染(render target)

@@ -12,7 +12,7 @@
 
 ## 自定义几何体(custom geometry)概述
 
-
+先来一个灵魂拷问。
 
 ### 有必要在 Three.js 中自定义几何体吗？
 
@@ -82,3 +82,335 @@
 
 
 
+## 自定义几何体示例：HelloCustomGeometry
+
+#### 示例目标
+
+1. 通过自定义几何体，来实现一个 立方体
+2. 自定义 立方体 6 个面的颜色
+3. 自定义 立方体 8 个顶点的颜色
+4. 给 立方体 添加 光照法线，让立方体可以反光
+
+
+
+#### 代码思路
+
+**如何自定义一个立方体？**
+
+答：主要分为 3 步
+
+1. 第1步：实例化一个 Three.Geometry
+
+   ```
+   const geometry = new Three.Geometry()
+   ```
+
+   
+
+2. 第2步：按照立方体相应的坐标，添加 8 个顶点
+
+   ```
+   geometry.vertices.push(
+       new Three.Vector3(-1, -1, 1), // 1
+       new Three.Vector3(1, -1, 1), // 2
+       new Three.Vector3(-1, 1, 1), // 3
+       new Three.Vector3(1, 1, 1), // 4
+       new Three.Vector3(-1, -1, -1), // 5
+       new Three.Vector3(1, -1, -1), // 6
+       new Three.Vector3(-1, 1, -1), // 7
+       new Three.Vector3(1, 1, -1) // 8
+   )
+   ```
+
+   
+
+3. 第3步：将相邻的 3 个顶点，依次按照逆时针顺序，构建成一个个三角形。
+
+   > 立方体一共有 6 个面，每个面由 2 个三角形构成，因此一共需要构建 12 个三角形
+
+   > 为什么必须是逆时针？这是 Three.js 规定的。
+
+   ```
+   geometry.faces.push(
+       //前面
+       new Three.Face3(0, 3, 2),
+       new Three.Face3(0, 1, 3),
+       //右面
+       new Three.Face3(1, 7, 3),
+       new Three.Face3(1, 5, 7),
+       //后面
+       new Three.Face3(5, 6, 7),
+       new Three.Face3(5, 4, 6),
+       //左面
+       new Three.Face3(4, 2, 6),
+       new Three.Face3(4, 0, 2),
+       //顶面
+       new Three.Face3(2, 7, 6),
+       new Three.Face3(2, 3, 7),
+       //底面
+       new Three.Face3(4, 1, 0),
+       new Three.Face3(4, 5, 1)
+   )
+   ```
+
+   
+
+   至此，就以成功构建出一个立方体的基本骨架。
+
+
+
+**如何自定义 6 个面的颜色额？**
+
+```
+geometry.faces[0].color = geometry.faces[1].color = new Three.Color('red')
+geometry.faces[2].color = geometry.faces[3].color = new Three.Color('yello')
+geometry.faces[4].color = geometry.faces[5].color = new Three.Color('green')
+geometry.faces[6].color = geometry.faces[7].color = new Three.Color('cyan')
+geometry.faces[8].color = geometry.faces[9].color = new Three.Color('blue')
+geometry.faces[10].color = geometry.faces[11].color = new Three.Color('magenta')
+```
+
+
+
+**如何自定义 8 个顶点的颜色？**
+
+```
+geometry.faces.forEach((face, index) => {
+    face.vertexColors = [
+        (new Three.Color()).setHSL(index / 12, 1, 0.5),
+        (new Three.Color()).setHSL(index / 12 + 0.1, 1, 0.5),
+        (new Three.Color()).setHSL(index / 12 + 0.2, 1, 0.5)
+    ]
+})
+```
+
+
+
+**如何开启顶点着色？**
+
+```
+const material = new THREE.MeshBasicMaterial({vertexColors: true})
+```
+
+```
+const material = new Three.MeshPhongMaterial({ vertexColors: true })
+```
+
+> vertexColors 默认值为 false，即默认显示材质 color 的颜色。
+>
+> 如果没有给材质设置 color 值，那么默认颜色值为 白色
+
+
+
+特别说明，在 Three.js 之前的版本中，vertexColors 的值并不是 Boolean，而是进行以下设置：
+
+```
+//export enum Colors {}
+//export const NoColors: Colors;
+//export const FaceColors: Colors;
+//export const VertexColors: Colors;
+
+const material = new THREE.MeshBasicMaterial({vertexColors: THREE.FaceColors});
+```
+
+在目前比较新的版本中，vertexColors 的值改为 Boolean 类型。
+
+
+
+**如何添加光照法线？**
+
+答：一共有 3 种方式
+
+1. 给每一个 face 设置 normal 属性值
+
+   ```
+   face.normal = new Three.Vector3(...)
+   ```
+
+2. 通过 vertexNormals 属性来设置
+
+   ```
+   face.vertexNormals = {
+     new Three.Vector3(...),
+     new Three.Vector3(...),
+     ...
+     new Three.Vector3(...)
+   }
+   ```
+
+3. 通过 computeFaceNormals() 和 computeVertexNormals() 这 2 个方法自动帮我们计算出光照法线。
+
+   但是对于立方体而言，只执行 computeFaceNormals() 方法即可。
+
+   ```
+   geometry.computeFaceNormals()
+   //geometry.computeVertexNormals() // 这个方法并不适用于立方体
+   ```
+
+> 第 3 种 方法最为简便，也比较常用。
+>
+> 本示例就采用第 3 种方式。
+
+
+
+**补充说明：computeVertexNormals() 为什么不适用于立方体？**
+
+答：因为 computeVertexNormals() 会从每个顶点共享的所有面的法线中计算得出法线，这样的发现会让立方体的顶点看上去更像一个球体。
+
+> 如果你执行了 computeVertexNormals()，并不会报错，仅仅是立方体顶点处看似更加圆润，像球一样。
+
+
+
+#### 代码示例：
+
+```
+import { useEffect, useRef } from 'react'
+import * as Three from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+
+import './index.scss'
+
+const HelloCustomGeometry = () => {
+    const canvasRef = useRef<HTMLCanvasElement>(null)
+
+    useEffect(() => {
+
+        if (canvasRef.current === null) {
+            return
+        }
+
+        const renderer = new Three.WebGLRenderer({ canvas: canvasRef.current })
+        const scene = new Three.Scene()
+
+        const camera = new Three.PerspectiveCamera(45, 2, 0.1, 100)
+        camera.position.z = 8
+
+        const light = new Three.DirectionalLight(0xFFFFFF, 1)
+        light.position.set(2, 2, 4)
+        scene.add(light)
+
+        const helper = new Three.DirectionalLightHelper(light)
+        scene.add(helper)
+
+        const controls = new OrbitControls(camera, canvasRef.current)
+        controls.update()
+
+        //自定义一个立方体几何体
+        const geometry = new Three.Geometry()
+        geometry.vertices.push(
+            new Three.Vector3(-1, -1, 1), // 1
+            new Three.Vector3(1, -1, 1), // 2
+            new Three.Vector3(-1, 1, 1), // 3
+            new Three.Vector3(1, 1, 1), // 4
+            new Three.Vector3(-1, -1, -1), // 5
+            new Three.Vector3(1, -1, -1), // 6
+            new Three.Vector3(-1, 1, -1), // 7
+            new Three.Vector3(1, 1, -1) // 8
+        )
+        geometry.faces.push(
+            //前面
+            new Three.Face3(0, 3, 2),
+            new Three.Face3(0, 1, 3),
+            //右面
+            new Three.Face3(1, 7, 3),
+            new Three.Face3(1, 5, 7),
+            //后面
+            new Three.Face3(5, 6, 7),
+            new Three.Face3(5, 4, 6),
+            //左面
+            new Three.Face3(4, 2, 6),
+            new Three.Face3(4, 0, 2),
+            //顶面
+            new Three.Face3(2, 7, 6),
+            new Three.Face3(2, 3, 7),
+            //底面
+            new Three.Face3(4, 1, 0),
+            new Three.Face3(4, 5, 1)
+        )
+
+        geometry.faces[0].color = geometry.faces[1].color = new Three.Color('red')
+        geometry.faces[2].color = geometry.faces[3].color = new Three.Color('yello')
+        geometry.faces[4].color = geometry.faces[5].color = new Three.Color('green')
+        geometry.faces[6].color = geometry.faces[7].color = new Three.Color('cyan')
+        geometry.faces[8].color = geometry.faces[9].color = new Three.Color('blue')
+        geometry.faces[10].color = geometry.faces[11].color = new Three.Color('magenta')
+
+        geometry.faces.forEach((face, index) => {
+            face.vertexColors = [
+                (new Three.Color()).setHSL(index / 12, 1, 0.5),
+                (new Three.Color()).setHSL(index / 12 + 0.1, 1, 0.5),
+                (new Three.Color()).setHSL(index / 12 + 0.2, 1, 0.5)
+            ]
+        })
+
+        geometry.computeFaceNormals()
+        //geometry.computeVertexNormals() //对于立方体而言，无需执行此方法
+
+        //const material = new Three.MeshBasicMaterial({ color: 'red' })
+        const material = new Three.MeshPhongMaterial({ vertexColors: true })
+        //const material = new Three.MeshPhongMaterial({ color: 'red' })
+        const cube = new Three.Mesh(geometry, material)
+        scene.add(cube)
+
+        const render = (time: number) => {
+            cube.rotation.x = cube.rotation.y = time * 0.001
+            renderer.render(scene, camera)
+            window.requestAnimationFrame(render)
+        }
+        window.requestAnimationFrame(render)
+
+        const handleResize = () => {
+            if (canvasRef.current === null) {
+                return
+            }
+
+            const width = canvasRef.current.clientWidth
+            const height = canvasRef.current.clientHeight
+            camera.aspect = width / height
+            camera.updateProjectionMatrix()
+            renderer.setSize(width, height, false)
+        }
+        handleResize()
+        window.addEventListener('resize', handleResize)
+
+        return () => {
+            window.removeEventListener('resize', handleResize)
+        }
+    }, [canvasRef])
+
+    return (
+        <canvas ref={canvasRef} className='full-screen' />
+    )
+}
+
+export default HelloCustomGeometry
+```
+
+实际运行后，就会看到一个 炫彩的立方体。
+
+
+
+#### 补充说明：
+
+本系列教程，实际上是我一边学习 https://threejsfundamentals.org/threejs/lessons/ ，一边使用 React + TypeScript + 自己的语言和理解 重写一遍的。
+
+本文对应的英文教程为：https://threejsfundamentals.org/threejs/lessons/threejs-custom-geometry.html
+
+在原版的英文教程中，还有另外一个 通过一张图片来生成一张地图的例子。
+
+我个人感觉没有必要去这么深入学习自定义几何体，所以本文略过这个示例。
+
+
+
+#### 本文小结：
+
+通过自定义一个立方体的示例，可以看出，尽管是一个很简单的立方体，可我们都需要非常复杂的空间坐标计算配置，因此还是本文开头那段话：
+
+1. 如非必要，不要在 Three.js 中自定义几何体。
+2. 使用传统的 3D 软件建模，更香。
+
+
+
+本文是通过 Geometry 来自定义几何体的。
+
+下一节，我们学习如何通过 BufferGeometry 自定义几何体。

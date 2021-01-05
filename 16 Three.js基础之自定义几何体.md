@@ -390,18 +390,6 @@ export default HelloCustomGeometry
 
 
 
-#### 补充说明：
-
-本系列教程，实际上是我一边学习 https://threejsfundamentals.org/threejs/lessons/ ，一边使用 React + TypeScript + 自己的语言和理解 重写一遍的。
-
-本文对应的英文教程为：https://threejsfundamentals.org/threejs/lessons/threejs-custom-geometry.html
-
-在原版的英文教程中，还有另外一个 通过一张图片来生成一张地图的例子。
-
-我个人感觉没有必要去这么深入学习自定义几何体，所以本文略过这个示例。
-
-
-
 #### 本文小结：
 
 通过自定义一个立方体的示例，可以看出，尽管是一个很简单的立方体，可我们都需要非常复杂的空间坐标计算配置，因此还是本文开头那段话：
@@ -411,6 +399,67 @@ export default HelloCustomGeometry
 
 
 
-本文是通过 Geometry 来自定义几何体的。
+#### 补充说明：
 
-下一节，我们学习如何通过 BufferGeometry 自定义几何体。
+本系列教程，实际上是我一边学习 https://threejsfundamentals.org/threejs/lessons/ ，一边使用 React + TypeScript + 自己的语言和理解 重写一遍的。
+
+
+
+本文对应的英文教程为：https://threejsfundamentals.org/threejs/lessons/threejs-custom-geometry.html
+
+在原版的英文教程中，还有另外一个 通过一张图片来获得 纹理坐标(UV)，进而生成一张地图的例子。
+
+我个人感觉没有必要去这么深入学习自定义几何体，所以本文略过这个示例。
+
+
+
+除此之外，官方还有单独一篇，使用 BufferGeometry 来自定义几何体的教程：
+
+https://threejsfundamentals.org/threejs/lessons/threejs-custom-buffergeometry.html
+
+我认为现阶段，没有必要如此这般的深入去学习自定义几何体，因为暂停这部分的学习。
+
+> 如果你还有精力，可以去学习一下。
+
+
+
+## Three.js基础知识总结
+
+通过前面一系列的学习，我们终于将 Three.js 基础知识学习完成。
+
+回顾一下我们都学习了哪些知识点：
+
+1. Three.js 简介、项目初始化、入门示例
+2. 图元、3D文字、场景、材质、纹理、灯光、镜头、阴影、雾、离屏渲染、自定义几何体
+3. 辅助对象(灯光辅助对象 LightHelper 、镜头辅助对象 XxxxCameraHelper、坐标轴辅助对象 AxesHelper)、镜头轨道控制类(OrbitControls)
+
+
+
+真心不容易，给自己一朵小红花！
+
+...
+
+我们本系列教程整体的规划是：
+
+1. 基础篇 (✓)
+2. 技巧篇 (x)
+3. 优化篇 (x)
+4. 解决方案 (x)
+5. WebVR (x)
+6. 实例篇 (x)
+
+目前我们已经学习了基础篇，对 Three.js 已经有了足够的基础知识掌握，后面的学习都是建立在这些基础知识之上的。
+
+
+
+**接下来，进入技巧篇——按需渲染。**
+
+
+
+#### 稍等，再啰嗦几句：
+
+我们后续的讲解文章中，将加快进度，不再像 基础篇 这样如此细致，甚至是啰嗦。
+
+因此，我希望你不看教程示例代码，而是自己独立敲出示例代码。如果做不到，那么你先不要着急进入下一篇，而是应该再回过头，反复阅读，反复敲几遍代码。
+
+> 在做(动手敲代码)的过程中学习，而不是只看不动手。

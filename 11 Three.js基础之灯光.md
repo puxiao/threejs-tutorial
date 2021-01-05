@@ -235,7 +235,7 @@ import { RectAreaLightHelper } from 'three/examples/jsm/helpers/RectAreaLightHel
 
 OrbitControls 是鼠标镜头轨道控件，可以通过鼠标来配置镜头的运动轨道，例如 缩放、平移、旋转。也就是说在不修改场景的前提下，可以通过鼠标来改变镜头，以便查看不同角度下的场景。
 
-> 在手机端，不是鼠标，而是手势
+> 在手机端，不是鼠标，而是手指滑动
 
 
 
@@ -251,6 +251,27 @@ controls.update() //使控件使用新目标
 请注意，在上面代码中，OrbitControls 的构造函数中第 2 个参数为DOM 中的 canvas 节点，实际上当添加过 OrbitControls 之后，鼠标在 canvas 上的 拖拽、鼠标滚轴滚动 等操作都会被捕捉到，并且做出相对应的镜头画面切换。
 
 说直白点，我们终于可以通过鼠标对 3D 场景进行不同角度，距离的切换操作了。
+
+
+
+**OrbitControls的change事件：**
+
+无论是通过 鼠标或键盘 来修改镜头轨道 都会触发 OrbitControls 的 change 事件。
+
+我们可以通过添加 事件监听 来捕获该事件：
+
+```
+const handleChange = () => { ... }
+
+const controls = new OrbitControls(camera, canvasRef.current)
+controls.addEventListener('change',handleChange)
+```
+
+对于目前的我们来说，是没有必要使用该事件的，在后续的 Three.sj 技巧篇 中，我们才会运用到 change 事件。
+
+
+
+除此之外，我们还可以设置 禁止缩放、禁止旋转、禁止右键拖拽、设置可旋转角度范围等等一系列配置，具体的可查阅官方文档：https://threejs.org/docs/#examples/zh/controls/OrbitControls
 
 
 
@@ -273,6 +294,27 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 由于 OrbitControls 实在是过于频繁使用，最终 Three.js 将 OrbitControls 也包含到了 Three.js 代码包中，只不过不在默认的目录中，而是在 Three.js 示例目录中。
 
 > 在 Three.js 早期的版本中，代码包中并未包含 OrbitControls，若想使用还需要 yarn 安装 three-orbitcontrols 这个包。只不过当后来 Three.js 包含了 OrbitControls 之后，才再也无需额外安装了。
+
+
+
+**补充说明2：**
+
+原本 OrbitControl 除了鼠标拖拽可以改变场景视角，还支持键盘上的 4 个方向键来改变场景视角。
+
+只不过 React 对于原生 DOM 事件支持度并不高，React 更倾向于给组件添加 onKeydown 属性处理函数。
+
+> 本质上 组件的 onKeydown 相当于 React 的合成事件。
+
+Three.js 的官方示例使用的是原生 html + js，是完全支持原生键盘事件的。所以 官网的示例 使用键盘方向键控制场景没有问题，但是在 React 项目中却不太容易实现。
+
+在 React 中如果想让 canvas 拥有键盘事件监听，需要做以下 2 处设置：
+
+1. 在 useEffect 中，当第一次挂载完成，添加 canvasRef.current.fouce()，让 canvas 自动获得焦点
+2. 在 <canvas /\> 中添加 tabindex 属性，属性值为 -1、0、1 都无所谓，例如：<canvas tabindex={0} /\>
+
+只有满足以上 2 个条件后，canvas 才会监听到键盘事件，但是一旦 canvas 失去焦点，那么就又监听不到了。
+
+> 还是继续使用 鼠标拖拽 来修改查看场景视角吧
 
 
 

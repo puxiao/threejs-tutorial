@@ -30,7 +30,23 @@
 
 
 
-## 你需要掌握的技术栈
+## WebGL相关教程
+
+首先说明一下，如果学想对 Three.js 有更深层次的修炼，那么你一定要去学习一下 WebGL。
+
+> WebGL又分为：WebGL1、WebGL2
+
+Three.js 本身就是针对 WebGL 的封装。
+
+WebGL 教程：https://webglfundamentals.org/webgl/lessons/zh_cn/
+
+WebGL2 教程：https://webgl2fundamentals.org/webgl/lessons/zh_cn/
+
+**假设你不想学习 WebGL 也没有关系，直接学习 Three.js 也是完全没有问题的。**
+
+
+
+## 你还需要掌握的技术栈
 
 * **JS、ES6**
 * **CSS、SCSS**

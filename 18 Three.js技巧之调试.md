@@ -234,17 +234,56 @@ Three.js 的源码并不是特别复杂，要敢于查看源码来解决疑惑�
 
 ## 使用GUI调试场景中的参数
 
-图形用户界面( Graphical User Interface ) 简称 GUI。
+**图形用户界面( Graphical User Interface ) 简称 GUI。**
 
-**Three.js 提供有一套针对 Three.js 的 GUI ——dat.gui.js**
-
-关于这个 GUI 的具体用法，我们会单独写一篇教程。
+> 主要目的是用来帮我们快速搭建可视化调试参数面板。
 
 
 
-## 调试GLSL(着色语言)
+**针对 JS 的 GUI ——dat.gui**
 
-着色语言( OpenGL Shading Language ) 简称 GLSL。
+官网地址：https://github.com/dataarts/dat.gui
 
 
 
+**针对 React 的 GUI——react-dat-gui**
+
+官网地址：https://github.com/claus/react-dat-gui
+
+
+
+**react-dat-gui 的具体用法，请查看我的另外一篇文章：[React中使用GUI.md](https://github.com/puxiao/notes/blob/master/React%E4%B8%AD%E4%BD%BF%E7%94%A8GUI.md)**
+
+
+
+本教程所有示例都是基于 react + typescript 的，所以我们选择使用 react-dat-gui
+
+在我们后续的示例中，就会使用到 react-dat-gui。
+
+
+
+## 调试GLSL
+
+**图形库着色语言( Graphic Library Shader Language ) 简称 GLSL。**
+
+> 学不动了，学不动了！
+
+GLSL 的相关介绍，可查阅：
+
+WebGL与GLSL：https://webglfundamentals.org/webgl/lessons/zh_cn/webgl-shaders-and-glsl.html
+
+WebGL2与GLSL：https://webgl2fundamentals.org/webgl/lessons/zh_cn/webgl-shaders-and-glsl.html
+
+
+
+由于我个人没有学习过 WebGL和 GLSL，所以暂时先不讨论如何调试 GLSL。
+
+> 谷歌浏览器还有一个专门用来调试着色器的插件：Shader Editor
+>
+> https://chrome.google.com/webstore/detail/shader-editor/ggeaidddejpbakgafapihjbgdlbbbpob?hl=en
+
+
+
+关于 Three.js 的调试技巧，就讲到这里。
+
+接下来讲解如何创建 场景快照。

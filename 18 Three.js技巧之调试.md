@@ -286,4 +286,4 @@ WebGL2与GLSL：https://webgl2fundamentals.org/webgl/lessons/zh_cn/webgl-shaders
 
 关于 Three.js 的调试技巧，就讲到这里。
 
-接下来讲解如何创建 场景快照。
+接下来讲解 Canvas 的一些常用小技巧。

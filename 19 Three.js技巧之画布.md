@@ -5,7 +5,7 @@
 * 创建画布截屏(快照)，并保存图片到本地
 * 设置不清除画布内容
 * 获取键盘事件
-* 设置画布为透明
+* 设置画布透明度
 * 设置画布为背景
 
 
@@ -352,7 +352,7 @@ canvas.toBlob((blob) => {
 
 好了，关于如何获取画布图片数据、如何保持图片到本地讲解完毕，来实践吧。
 
-无论采用 canvas.toDataURL() 还是 canvas.toBlob() 都可以，本示例我们采用 toDataURL() 。
+无论采用 canvas.toDataURL() 还是 canvas.toBlob() 都可以，本示例我们采用 toBlob() 。
 
 我们将 index.stx 的代码修改如下：
 
@@ -379,21 +379,20 @@ const HelloCanvas = () => {
         const canvas = canvasRef.current
 
         //采用 toDataURL() 方式
-        const imgurl = canvas.toDataURL('image/jpeg', 0.8)
-        const a = document.createElement('a')
-        a.href = imgurl
-        a.download = 'myimg.jpeg' //我们定义下载图片的文件名
-        a.click()
-
+        // const imgurl = canvas.toDataURL('image/jpeg', 0.8)
+        // const a = document.createElement('a')
+        // a.href = imgurl
+        // a.download = 'myimg.jpeg' //我们定义下载图片的文件名
+        // a.click()
 
         //采用 toBlob() 方式
-        // canvas.toBlob((blob) => {
-        //     const imgurl = window.URL.createObjectURL(blob)
-        //     const a = document.createElement('a')
-        //     a.href = imgurl
-        //     a.download = 'myimg.jpeg'
-        //     a.click()
-        // }, 'image/jpeg', 0.8)
+        canvas.toBlob((blob) => {
+            const imgurl = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = imgurl
+            a.download = 'myimg.jpeg'
+            a.click()
+        }, 'image/jpeg', 0.8)
     }
 
     return (
@@ -418,3 +417,519 @@ export default HelloCanvas
 **what ？why ？**
 
 呵，马上讲解为什么。
+
+
+
+**问题出在了哪里？**
+
+首先我们容易想到，在 use-create-scene.ts 的 render() 函数中，不停的运行着每一帧都进行画布重新渲染的代码，莫非是我们截图那一瞬间刚好画布还未渲染完成？
+
+好，我们先把那行代码删除掉，看是否就可以截图显示有内容了。
+
+```diff
+const render = (time: number) => {
+    time *= 0.001
+    cubes.forEach((cube) => {
+        cube.rotation.x = cube.rotation.y = time
+    })
+    renderer.render(scene, camera)
+-   window.requestAnimationFrame(render)
+}
+window.requestAnimationFrame(render)
+```
+
+再次运行，3 个立方体是静止状态，此时点击按钮保存截图。
+
+查看该图，竟然依然是空白，没有内容的。
+
+看来问题并不出在上面一行代码中，我们恢复刚才删除的 `window.requestAnimationFrame(render)`，再去想其他原因。
+
+
+
+**真实的原因是：**
+
+1. 我们所谓的针对画布截屏 创建快照，实际上是获取 canvas 中的数据
+2. 但这个数据并不是针对 DOM 中已显示的 canvas，而是针对 canvas 对象中缓冲区的数据
+3. 关键在于当 canvas 渲染完成后(DOM中已显示出内容)，默认会清空 缓冲区中的数据
+4. 所以，这就是我们为什么去 “获取 canvas 图像数据时得到是空白内容” 的原因
+
+
+
+**canvas从计算到显示的过程：**
+
+1. canvas 根据相应的 JS 规则，开始创建、计算画布内容数据
+2. canvas 将计算得到的画布内容数据填充到 canvas 缓冲区
+3. 当 canvas 画布内容计算完成，此时 canvas 缓冲区已有完整的画布内容数据后，将画布内容显示到 DOM 中
+
+
+
+**再说一遍：**
+
+我们之前的示例中，渲染并显示 canvas 内容的函数 render 和 创建画布快照 的函数是相互独立的，这就造成了当我们去获取 canvas 缓冲区数据时，canvas 已经将画布内容显示到 DOM 中并且清空了缓冲区。
+
+
+
+**解决办法：**
+
+解决办法就是当我们要创建画布快照，获取 canvas 缓冲区内容之前，在同一个函数体内，额外调用一次 render 函数，确保此时 canvas 缓冲区内是有内容的。
+
+
+
+**实际代码：**
+
+第1：由于我们示例代码中，render 函数本身位于 useCreateScene 函数内部，因此我们需要创造一个 renderRef  的钩子(hook)，将 renderRef 对外 return 出去，以便 index.stx 中可以获取 render 函数的引用。
+
+```
+type RenderType = () => void
+...
+
+const renderRef = useRef<RenderType | null>(null)
+...
+
+renderRef.current = render
+...
+
+return renderRef
+```
+
+
+
+第2：这样做引申出另外一个问题，就是我们的 render 函数其实是有参数 time 的：
+
+```
+const render = (time: number) => {
+    time *= 0.001
+    cubes.forEach((cube) => {
+        cube.rotation.x = cube.rotation.y = time
+    })
+    renderer.render(scene, camera)
+    window.requestAnimationFrame(render)
+}
+window.requestAnimationFrame(render)
+```
+
+而我们希望 index.tsx 中调用 render() 是不传参数 time 的。因为 index.tsx 中根本不存在 time 这个变量，所以我们需要对 渲染 进行适当的改造。
+
+我们将原本的 渲染函数 render() 拆分成 2 个函数：
+
+1. 单纯负责渲染的 render 函数
+2. 负责修改物体属性从而产生动画的 animate 函数
+
+```
+const render = () => {
+    renderer.render(scene, camera)
+}
+renderRef.current = render
+
+const animate = (time: number) => {
+    time *= 0.001
+    cubes.forEach((cube) => {
+        cube.rotation.x = cube.rotation.y = time
+    })
+    render() //这样 render() 就是一个不需要参数的函数
+    window.requestAnimationFrame(animate)
+}
+window.requestAnimationFrame(animate)
+```
+
+经过这样改造后，完整的 use-create-screen.ts 代码如下：
+
+```
+import { useEffect, useRef } from 'react'
+import * as Three from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+
+type RenderType = () => void
+
+const useCreateScene = (canvasRef: React.RefObject<HTMLCanvasElement>) => {
+    const renderRef = useRef<RenderType | null>(null)
+
+    useEffect(() => {
+        if (canvasRef.current === null) { return }
+
+        const renderer = new Three.WebGLRenderer({ canvas: canvasRef.current })
+        const scene = new Three.Scene()
+        scene.background = new Three.Color(0x222222)
+        const camera = new Three.PerspectiveCamera(45, 2, 0.1, 100)
+        camera.position.set(0, 5, 10)
+
+        const light = new Three.DirectionalLight(0xFFFFFF, 1)
+        light.position.set(5, 10, 0)
+        scene.add(light)
+
+        const controls = new OrbitControls(camera, canvasRef.current)
+        controls.update()
+
+        const colors = ['blue', 'red', 'green']
+        const cubes: Three.Mesh[] = []
+        colors.forEach((color, index) => {
+            const mat = new Three.MeshPhongMaterial({ color })
+            const geo = new Three.BoxBufferGeometry(2, 2, 2)
+            const mesh = new Three.Mesh(geo, mat)
+            mesh.position.x = (index - 1) * 4
+            scene.add(mesh)
+            cubes.push(mesh)
+        })
+
+        const render = () => {
+            renderer.render(scene, camera)
+        }
+        renderRef.current = render
+
+        const animate = (time: number) => {
+            time *= 0.001
+            cubes.forEach((cube) => {
+                cube.rotation.x = cube.rotation.y = time
+            })
+            render() //这样 render() 就是一个不需要参数的函数
+            window.requestAnimationFrame(animate)
+        }
+        window.requestAnimationFrame(animate)
+
+        const handleResize = () => {
+            if (canvasRef.current === null) { return }
+            const width = canvasRef.current.clientWidth
+            const height = canvasRef.current.clientHeight
+            camera.aspect = width / height
+            camera.updateProjectionMatrix()
+            renderer.setSize(width, height, false)
+        }
+        handleResize()
+        window.addEventListener('resize', handleResize)
+
+        return () => {
+            window.removeEventListener('resize', handleResize)
+        }
+    }, [canvasRef])
+
+    return renderRef
+}
+
+export default useCreateScene
+```
+
+index.tsx 完整代码如下：
+
+```
+import { useRef, useState } from 'react'
+import DatGUI, { DatButton } from 'react-dat-gui'
+import useCreateScene from './use-create-scene'
+
+import './index.scss'
+import 'react-dat-gui/dist/index.css'
+
+const HelloCanvas = () => {
+    const canvasRef = useRef<HTMLCanvasElement>(null)
+    const [date, setDate] = useState<any>({})
+
+    const renderRef =  useCreateScene(canvasRef) //获取自定义 hook 返回的 renderRef
+
+    const handleGUIUpdate = (newDate: any) => {
+        setDate(newDate)
+    }
+
+    const handleSaveClick = () => {
+        if (canvasRef.current === null || renderRef.current === null) { return }
+        const canvas = canvasRef.current
+
+        renderRef.current() //此时调用 render()，进行一次渲染，确保 canvas 缓冲区有数据
+
+        //采用 toDataURL() 方式
+        // const imgurl = canvas.toDataURL('image/jpeg', 0.8)
+        // const a = document.createElement('a')
+        // a.href = imgurl
+        // a.download = 'myimg.jpeg' //我们定义下载图片的文件名
+        // a.click()
+
+        //采用 toBlob() 方式
+        canvas.toBlob((blob) => {
+            const imgurl = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = imgurl
+            a.download = 'myimg.jpeg'
+            a.click()
+        }, 'image/jpeg', 0.8)
+    }
+
+    return (
+        <div className='full-screen'>
+            <canvas ref={canvasRef} className='full-screen' />
+            <DatGUI data={date} onUpdate={handleGUIUpdate} className='dat-gui' >
+                <DatButton label='点击保存画布快照' onClick={handleSaveClick} />
+            </DatGUI>
+        </div>
+    )
+}
+
+export default HelloCanvas
+```
+
+调试运行，这次保存的画布快照图片，就不会再是空白，而是有具体内容了。
+
+
+
+## 设置不清除画布内容
+
+上面刚讲到 HTML5 中的 Canvas 每次渲染都存在一个 数据缓冲区的概念，而 Three.js 的渲染器 WebGLRenderer 也同样存在 数据缓冲区 这个概念。
+
+WebGLRenderer 缓冲区内为每次渲染场景得到的画面数据，默认情况下每一次渲染都会清空(释放)上一次的渲染画面数据。
+
+Canvas 数据缓冲区每次清空 这个我们没有办法修改，只能调用渲染函数，重新渲染一次。
+
+但是 WebGLRenderer 的数据缓冲区却是可以通过设置让默认不清除的。
+
+> 所谓不清除上一次数据缓冲区的内容，本质上就是保留上一次渲染画面内容
+
+> 所谓不清除画布内容，本质上是让渲染器不清除之前的渲染内容
+
+
+
+**设置 WebGLRenderer 保留数据缓冲区中的历史数据：**
+
+我们只需要将 WebGLRender 的配置修改如下：
+
+```
+const renderer = new Three.WebGLRenderer({
+    canvas: canvasRef.current,
+    preserveDrawingBuffer: true,
+    alpha: true
+})
+renderer.autoClearColor = false
+```
+
+经过以上的修改之后，每次渲染都会继续保留之前渲染历史画面。
+
+调试运行代码，你就能感受到和之前渲染的不一样效果了。
+
+
+
+**但是，存在一个问题：当浏览器窗口尺寸改变后，由于执行了 renderer.setSize()，则此时 渲染器中过往的渲染内容将会被清空。**
+
+> 渲染器中的渲染历史内容被清空后，画面就好像第一次刚开始那样，重新开始渲染。
+
+> 补充说明：当用户在手机上浏览时，手机从竖屏变为横屏时，也会触发重新绘制。
+
+
+
+**真正的解决方案：离屏渲染**
+
+例如使用 WebGLRenderTarget，具体请回顾我们之前讲解的内容：[15 Three.js基础之离屏渲染.md](https://github.com/puxiao/threejs-tutorial/blob/main/15%20Three.js%E5%9F%BA%E7%A1%80%E4%B9%8B%E7%A6%BB%E5%B1%8F%E6%B8%B2%E6%9F%93.md)
+
+
+
+## 获取键盘事件
+
+#### 让 Canvas 获取键盘事件
+
+必须同时满足以下  2 个条件后，canvas 才可以获得键盘事件。
+
+1. canvas 当前获得焦点
+
+2. `<canvas \>` 标签中必须添加 tabIndex属性，
+
+   > 属性值是 -1、0、1 都无所谓，建议设置为 0
+
+
+
+补充说明：当 canvas 获得当前焦点后，会在四周出现一个蓝色边框，可以通过定义 css 样式来取消这个样式。
+
+```
+canvas:focus {
+    outline: none;
+}
+```
+
+
+
+**简单示例：**
+
+```
+import { useEffect, useRef } from 'react'
+
+import './index.scss'
+
+const CanvasKeyboard = () => {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null)
+    useEffect(() => {
+        if (canvasRef.current === null) { return }
+
+        canvasRef.current.focus() //自动获取焦点
+
+        const handleKeydown = (event: KeyboardEvent) => {
+            console.log(event)
+        }
+
+        canvasRef.current.addEventListener('keydown', handleKeydown)
+
+        return () => {
+            if (canvasRef.current === null) { return }
+            canvasRef.current.removeEventListener('keydown', handleKeydown)
+        }
+    }, [canvasRef])
+    return (
+        <canvas ref={canvasRef} className='full-screen' tabIndex={0} />
+    )
+}
+
+export default CanvasKeyboard
+```
+
+
+
+#### 让 OrbitControl 获取键盘事件
+
+默认 OrbitControl 对象就包含键盘方向键侦听。
+
+键盘上的 上下左右 方向键 均可操控改变 镜头轨道视图。
+
+但是我们之前的代码中，经常是这样写的：
+
+```
+const controls = new OrbitControls(camera, canvasRef.current)
+```
+
+这样存在的问题是，当 canvas 失去焦点后，就无法再获得键盘事件。
+
+最简单的解决办法就是将代码修改为：
+
+```
+const controls = new OrbitControls(camera, document.body)
+```
+
+这样键盘事件就不容易丢失。
+
+
+
+
+
+## 设置画布透明度
+
+设置画布透明度，你可能会疑惑，这有什么好讲的，直接通过 css 给 canvas 添加透明度样式即可：
+
+```
+canvas {
+    opacity: 0.4;
+}
+```
+
+这样做肯定没有问题，但是这里说的 “设置画布透明度” 实际上是指 给不同物体设置透明度。
+
+例如我们之前示例中的立方体，那么所有的示例中立方体都不是半透明的。
+
+
+
+**给材质设置透明度：**
+
+1. 需要给材质设置透明度
+
+   ```
+   const mat = new Three.MeshPhongMaterial({
+       color,
+       opacity: 0.4
+   })
+   ```
+
+   
+
+2. 渲染器需要开启透明度渲染
+
+   ```
+   const renderer = new Three.WebGLRenderer({ 
+       canvas: canvasRef.current,
+       alpha:true,
+       premultipliedAlpha:false
+   })
+   ```
+
+   > alpha：canvas 是否包含透明度，默认为 false
+   >
+   > premultipliedAlpha：renderer 是否假设颜色有 premultiplied alpha (预乘alpha)，默认为 true
+
+   
+
+**针对 预乘Alpha 的补充说明：**
+
+premultiplied alpha：颜色值 预乘 alpha
+
+这是传统 3D 绘制中的一个重要概念，你可以简单理解成如下：
+
+假设我们要表示一个 透明度为 60% 的纯红色，采用 RGBA 的方式为 (255,0,0,0.6)，通过  预乘 alpha，我们可以得到透明度为 60% 的纯红色如果放置在纯白色底上，实际上最终呈现出来的颜色和 RGB ( 255,102,102) 是完全相同的。
+
+假设一个颜色使用 RGBA 来表示，透明度为 A、rgb 颜色为 C、纯白色(255,255,255)为 F，那么把 RGBA 转化为 RGB 的公式为：
+
+C*A  + ( 1-A ) * F
+
+也就是说 rgba(255,0,0,0.6) 转化为对应的 rgb 过程为：
+
+(255,0,0)*0.6 + (1-0.6) * (255,255,255) = (255,  255 x 0.4, 255 x 0.4) = (255,102,102)
+
+
+
+**暂时看不懂没有关系，只需记住若想让渲染器将物体渲染出半透明，除了物体本身材质配置透明度以外，还需要将渲染器中的 alpha 设置为 true 、premultipliedAlpha 设置为 false**
+
+ 
+
+## 设置画布为背景
+
+将 canvas 设置为网页背景，事实上也很简单，对应的样式：
+
+```
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+```
+
+上述 CSS  样式就让 canvas 位置固定，且层级最低，这样就成为当前网页背景了。
+
+但是实际项目中，更加建议将 canvas 包含在一个 iframe 中后，再作为 网页的背景。
+
+这样做有几个理由：
+
+1. 使用 iframe 后，可以将  canvas、Three.js 的相关代码独立出来
+2. 可以多个页面都引用这个  iframe 
+
+
+
+**iframe的相关示例：**
+
+```
+<iframe id='background' src='xxx.html' >
+<div>
+    Hello Three.js
+</div>
+```
+
+```
+#background {
+    position: fixed;
+    width:100%;
+    height:100%;
+    left:0;
+    top:0;
+    z-index:-1;
+    border:none;
+    pointer-events:none;
+}
+```
+
+上述 css 样式中：
+
+1. position: fixed;  可以让 iframe 位置固定
+2. z-index: -1; 可以让 iframe 层级最低
+3. border: none; 可以让 iframe 不显示边框
+4. pointer-events: none; 让 iframe 永远不会成为鼠标事件的  target，意味着让 iframe 不接受鼠标交互事件
+
+
+
+关于更多 canvas 的相关用法，建议阅读 MDN 上关于 canvas 的相关文档：
+
+https://developer.mozilla.org/zh-CN/docs/Web/API/Canvas_API
+
+
+
+至此，关于 Three.js 的一些常用技巧讲解完毕。
+
+接下来开始讲解 Three.js 的一些性能优化。

@@ -717,6 +717,202 @@ renderer.autoClearColor = false
 
 
 
+### 补充一个示例：PreserveDrawingBuffer
+
+src/components/hello-canvas/preserve-drawing-buffer.tsx
+
+#### 示例目标：
+
+1. 创建一个由 6 个立方体，做相互缠绕运动的一个物体
+2. 创建一个正交镜头 OrthographicCamera
+3. 给 canvas 添加鼠标滑动监听、以及 手指滑动监听
+4. 当 鼠标或手指滑动画布时，更新 物体 在镜头中的位置
+5. 设置渲染器不清除历史画面
+
+最终呈现出的效果：类似一个 画笔在画板上 画画 的效果。
+
+
+
+**PreserveDrawingBuffer 代码：**
+
+```
+import { useEffect, useRef } from 'react'
+import * as Three from 'three'
+
+import './index.scss'
+
+const state = { x: 0, y: 0, z: 0 }
+
+const PreserveDrawingBuffer = () => {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
+    useEffect(() => {
+        if (canvasRef.current === null) { return }
+
+        const renderer = new Three.WebGLRenderer({
+            canvas: canvasRef.current,
+            preserveDrawingBuffer: true,
+            alpha: true
+        })
+        renderer.autoClearColor = false
+
+        const camera = new Three.OrthographicCamera(-2, 2, 1, -1, -1, 1)
+
+        const scene = new Three.Scene()
+        scene.background = new Three.Color(0xFFFFFF)
+
+        const light = new Three.DirectionalLight(0xFFFFFF, 1)
+        light.position.set(-1, 2, 3)
+        scene.add(light)
+
+        const geometry = new Three.BoxBufferGeometry(1, 1, 1)
+        const base = new Three.Object3D()
+        scene.add(base)
+        base.scale.set(0.1, 0.1, 0.1)
+
+        const colors = ['#F00', '#FF0', '#0F0', '#0FF', '#00F', '#F0F']
+        const numArr = [-2, 2] //同一坐标轴上，对称 2 个立方体的坐标
+        colors.forEach((color, index) => {
+            const material = new Three.MeshPhongMaterial({ color })
+            const cube = new Three.Mesh(geometry, material)
+
+            const col = Math.floor(index / numArr.length)
+            const row = index % numArr.length
+            let result = [0, 0, 0]
+            result[col] = numArr[row]
+
+            cube.position.set(result[0], result[1], result[2])
+
+            base.add(cube)
+        })
+
+        const temp = new Three.Vector3()
+        const updatePosition = (x: number, y: number) => {
+            if (canvasRef.current === null) { return }
+
+            // const rect = canvasRef.current.getBoundingClientRect()
+            // const newX = (x - rect.left) * canvasRef.current.width / rect.width
+            // const newY = (y - rect.top) * canvasRef.current.height / rect.height
+
+            // const resX = newX / canvasRef.current.width * 2 - 1
+            // const resY = newY / canvasRef.current.height * -2 + 1
+
+            const resX = x / canvasRef.current.width * 2 - 1
+            const resY = y / canvasRef.current.height * -2 + 1
+
+            temp.set(resX, resY, 0).unproject(camera)
+            state.x = temp.x
+            state.y = temp.y
+        }
+
+        const handleMouseMove = (eve: MouseEvent) => {
+            updatePosition(eve.clientX, eve.clientY)
+        }
+        const handleTouchMove = (eve: TouchEvent) => {
+            eve.preventDefault()
+            const touche = eve.touches[0]
+            updatePosition(touche.clientX, touche.clientY)
+        }
+
+        canvasRef.current.addEventListener('mousemove', handleMouseMove)
+        canvasRef.current.addEventListener('touchmove', handleTouchMove, { passive: false })
+
+        const render = (time: number) => {
+            time = time * 0.001
+            base.position.set(state.x, state.y, state.z)
+            base.rotation.x = time
+            base.rotation.y = time * 1.11
+            renderer.render(scene, camera)
+            window.requestAnimationFrame(render)
+        }
+        window.requestAnimationFrame(render)
+
+        const handleResize = () => {
+            if (canvasRef.current === null) { return }
+            const width = canvasRef.current.clientWidth
+            const height = canvasRef.current.clientHeight
+            camera.right = width / height
+            camera.left = - camera.right
+            camera.updateProjectionMatrix()
+            renderer.setSize(width, height, false)
+        }
+        handleResize()
+        window.addEventListener('resize', handleResize)
+
+        return () => {
+            window.removeEventListener('resize', handleResize)
+        }
+    }, [canvasRef])
+
+    return (
+        <canvas ref={canvasRef} className='full-screen' />
+    )
+}
+
+export default PreserveDrawingBuffer
+```
+
+**补充说明：**
+
+上面这段代码略微复杂、陌生。因为这段代码中有几个地方是我们之前示例中从来未接触过的：
+
+1. 使用的是正交镜头，而不是透视镜头
+
+2. 当窗口尺寸发生变化时，更新正交镜头
+
+   > 更新方式和我们之前习惯使用的 透视镜头(PerspectiveCamera) 大不同
+
+3. 监听鼠标滑动、手指滑动事件
+
+4. 更新 物体 在正交镜头中的 “投影位置”
+
+
+
+**额外补充：**
+
+上述代码中，6 个立方体 他们分别是：
+
+1. 在 x 轴对称的 2 个立方体
+
+   > 在示例中，对应的坐标分别为 (-2,0,0)、(2,0,0)
+
+2. 在 y 轴对称的 2 个立方体
+
+   > 在示例中，对应的坐标分别为 (0,-2,0)、(0,2,0)
+
+3. 在 z 轴堆成的 2 个立方体
+
+   > 在示例中，对应的坐标分别为 (0,0,-2)、(0,0,2)
+
+这 6 个立方体他们依次对应的坐标，没有提前写死，而是通过一段特殊的 forEach 循环来计算得出的。
+
+可以阅读下面这段通用的代码，帮助你理解 整个 forEach 循环是如何得到每个立方体坐标的。
+
+```
+//遍历出 目标长度为N，特殊值为 [xx, xx, ...] 的 多维数组
+const numArr = [-2, 2] //定义特殊位置上出现的数字
+const arrLength = 3 //定义目标数组长度
+const total = arrLength * numArr.length //根据目标数组长度以及特殊数字的个数，计算得出目标数组的总个数
+for (let i = 0; i < total; i++) {
+    const col = Math.floor(i / numArr.length) //计算出特殊位置的索引
+    const row = i % numArr.length //计算出特殊位置上数字值对应的索引
+    let result = new Array(arrLength) //得到一个 长度为 arrLenght 的数组
+    result.fill(0) //将数组每一项填充为 0
+    result[col] = numArr[row] //修改特殊位置上的值
+    console.log(result)
+}
+```
+
+
+
+如果你对 useCreateScene 这个示例不太理解也没有关系，因为毕竟这个示例中出现了一些我们之前示例中从未用到的一些类，你可以先跳过这个示例，继续后面的学习。
+
+> 随着日后对于 正交镜头 的多次使用，终归会熟练并理解的。
+
+
+
+
+
 ## 获取键盘事件
 
 #### 让 Canvas 获取键盘事件

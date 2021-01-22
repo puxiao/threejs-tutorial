@@ -155,11 +155,13 @@ const url = 'https://threejsfundamentals.org/threejs/resources/threejs/fonts/hel
 
 **第2步：添加图片目录对应的 alias 配置**
 
-修改项目中 tsconfig.paths.json，向  paths 中添加：
+修改项目中 tsconfig.paths.json，向  paths 中添加 src/assets 目录的资源别名：
 
 ```
- "@/assets/imgs/*": ["./src/assets/imgs/*"]
+ "@/assets/*": ["./src/assets/*"]
 ```
+
+> 备注：以后的章节中，我们还会陆续向 assets 目录中添加其他类型的文件，例如模型文件、asc数据文件等等。
 
 
 

@@ -97,11 +97,17 @@ NODATA_value  -9999
 
 这里面的数据内容为：**矩形地球地图上，不同点(经纬度)对应的数值(人口数量)**。
 
+> 补充：这里面的人口数量值并不是具体人口数量(比如 45932551 个人)，而是具有一定比例单位的值(例如 458.6)
+>
+> 具体单位值对应的人口我还不清楚，或许是 万，也或许是百万，不过不影响我们本示例，你只需把他当成数字即可
+
 我们需要将数据与地图纹理图片进行点对点的位置匹配。
 
 
 
-> **ASCII栅格数据文件结构说明：**
+> .asc 后缀的文件有特别多种用途和场景，我们这里提到的 .asc 文件是指：以 `PGP (Pretty Good Privacy) ASCII Armored File`形式存在的栅格化结构的数据文件。
+
+> **.asc 栅格化结构的数据文件说明：**
 >
 > | 关键字                       | 对应含义                 |
 > | ---------------------------- | ------------------------ |
@@ -112,9 +118,9 @@ NODATA_value  -9999
 > | cellsize(cell size)          | 每个单元格元的尺寸       |
 > | NODATA_value                 | 单元格内没有值时对应的值 |
 >
-> > 你可以把 ASCII 想象成一个数据表格，每个单元格为一项，N 行 N 列 个单元格构建成了一个 数据网格。
+> > 你可以把 .asc文件 想象成一个数据表格，每个单元格为一项，nrows 行 ncols 列 个单元格构建成了一个 数据网格。
 > >
-> > NODATA_value 后面的数据就是依次填入数据单元网格中的。
+> > 除了 .asc 开头的属性值键对外，后面的就是依次填入数据单元网格中的数据。
 
 
 
@@ -136,53 +142,419 @@ NODATA_value  -9999
 
 
 
+**特别说明：**
+
+以下几个步骤中的代码，重点是向你讲解具体的功能和思路，并不是最终的代码。
+
+最终完整的示例代码中，会对这些每个步骤中的代码进行新的组织。
+
+
+
 #### 第1步：加载人口数据文件(gpw_v4_2010.asc)
 
+1. **数据文件路径为 ./src/assets/data/gpw_v4_2010.asc**
 
+2. **由于我们使用 alias 来得到 .asc 文件编译后的路径，所以请记得：**
+
+   1. tsconfig.pahts.json 的 paths 中添加 `"@/assets/*": ["./src/assets/*"]`
+
+   2. global.d.ts 中添加 `declare module '*.asc';`
+
+   3. 以上 2 处均配置正确后，才可以让我们在代码中方便使用 `require('@/assets/xx/xx.asc').default` 来获取 .asc 资源的路径
+
+      > 假设你并不是使用 react + typescript + alias，那么你可以忽略我提到的配置，直接请求一个固定的网络资源(.asc文件)就好了。
+
+3. **通过 window.fetch() 这个函数来获取 .asc 文件内容**
+
+   > 我们这里没有使用 xhr 或 axios 来请求获取文件资源，而是使用了 fetch 这个 Web API
+   >
+   > 关于 fetch 的用法，请参考：https://developer.mozilla.org/zh-CN/docs/Web/API/Fetch_API
+
+**具体的代码：**
+
+```
+const loadDataFile = async (url: string) => {
+    try {
+        const res = await window.fetch(url)
+        const text = await res.text() // text 就是 .asc 文件里的内容
+    } catch (error) {
+        console.log('加载数据出错')
+    }
+}
+
+const ascURL = require('@/assets/data/gpw_v4_2010.asc').default
+loadDataFile(ascURL)
+```
+
+
+
+> 额外说一个事情，本文对应的是 Three.js 官方教程 https://threejsfundamentals.org/threejs/lessons/threejs-optimize-lots-of-objects.html
+>
+> 我在阅读英文原文时，当时他代码中使用的是：
+>
+> ```
+> async function loadFile(url) {
+>   const req = await fetch(url);
+>   return req.text();
+> }
+> ```
+>
+> 我认为不应该将返回值使用变量 req(request)，而应该是 res(response)，于是我就提交了一个合并请求(PR)，然后很快就得到 [greggman](https://github.com/greggman) 的回应，我的 PR 已被合并到 master 中。
+>
+> 呵，我也顺带成为了这个项目中的一名 贡献者(contributor)。
 
 
 
 #### 第2步：解析人口数据
 
+1. **为了方便我们以后代码提示，我们先使用 TypeScript 定义解析 .asc 数据后的格式**
 
+   ```
+   type DataType = (number | undefined)[][]
+   type ASCData = {
+       data: DataType,
+       ncols: number,
+       nrows: number,
+       xllcorner: number,
+       yllcorner: number,
+       cellsize: number,
+       NODATA_value: number,
+       max: number,
+       min: number,
+   }
+   ```
 
+   > data 为栅格化的世界人口数据，一共 nrows 条，每一条是由 ncols 个数字构成
+   >
+   > 假设某个点对应有人口数据则值为具体的数字，若没有人口则值为 undefined。
+   >
+   > 请记得没有人口数据的值为 undefined，而不是 0。
+   >
+   > max、min 分别为我们添加的自定义属性，用来记录所有地区人口数据中最多和最少的人口数量，以此我们方便计算出 柱状高度比例
 
+2. **开始解析 .asc 文件内容，大体步骤如下：**
+
+   1. 首先我们知道 .asc 中每一行对应一条数据，那么就可以使用换行符 '\n' 来分隔出每一条数据，然后针对每一条数据进行解析
+
+      ```
+      text.split('\n').forEach((line) => { ... })
+      ```
+
+   2. 被分隔出来的每一行数据，再进一步转化和分析：
+
+      1. 由于可能存在多个连续空格，因此我们对每一条数据，再通过正则表达式 `/\s+/` 进一步分隔
+
+         ```
+         // 在正则表达式 ‘/\s+/’ 中 s 表示为空格，+ 表示 1个或多个
+         const parts = line.trim().split(/\s+/)
+         ```
+
+      2. 位于 .asc 文件开头，描述栅格化数据的一些属性，例如 ncols、nrows...，这些数据的结构为：`属性名 + 空格 + 值` 构成的
+
+         ```
+         if (parts.length === 2) { ... }
+         ```
+
+      3. 位于 .asc 文件中间，一行行，一条条具体的数据值，这些数据的结构为：`数字 + 空格 + 数字 + ...`
+
+         ```
+         if (parts.length > 2) { ... }
+         ```
+
+      4. 位于 .asc 文件尾部，可能存在的、无用的空白换行，这些空白换行是需要被我们通过条件判断来忽略掉的
+
+         ```
+         由于前面已经进行了 length === 2 或 > 2 的判断，那么剩下的就肯定是空白无用的换行，我们什么也不做处理就好。
+         ```
+
+   3. 在解析所有人口数据的过程中，我们要不断记录、得出 人口最大数值和最小数值
+
+   4. 最终将解析好的数据结果对象，通过 TS 的 as 断言，对外返回出结果
+
+   5. 补充一点：由于我们从 text 中读取到的 “数字” 其实是 字符串，所以在解析过程中都需要使用 parseFloat() 这个函数将 string 转化为 number
+
+   6. 再补充一个细节，在初始化 max 和 min 时：
+
+      1. 让 max 初始化值为 0，因为我们知道有人口数据的值一定是大于 0 的
+      2. 让 min 初始化值为 99999，因为我们知道一定有人口数据的值一定是小于 99999 的，且人口数量一定不会是负数
+
+   **具体的代码：**
+
+   ```
+   const parseData = (text: string) => {
+       const data: (number|undefined)[][] = []
+       const settings: { [key: string]: any } = { data }
+       let max:number = 0
+       let min:number = 99999
+       text.split('\n').forEach((line) => {
+           const parts = line.trim().split(/\s+/)
+           if (parts.length === 2) {
+               settings[parts[0]] = parseFloat(parts[1])
+           } else if(parts.length > 2) {
+               const values = parts.map((item) => {
+                   const value = parseFloat(item)
+                   if (value === settings['NODATA_value']) {
+                       return undefined
+                   }
+                   max = Math.max(max, value)
+                   min = Math.min(min, value)
+                   return value
+               })
+               data.push(values)
+           }
+       })
+       return { ...settings, ...{ max, min } } as ASCData
+   }
+   ```
+
+   
 
 #### 第3步：加载地球纹理图片
 
+```
+const loader = new Three.TextureLoader()
+const texture = loader.load(require('@/assets/imgs/world.jpg').default,render)
+const material = new Three.MeshPhongMaterial({
+    map: texture
+})
+const geometry = new Three.SphereBufferGeometry(2, 32, 32)
+const earth = new Three.Mesh(geometry, material)
+scene.add(earth)
+```
 
+> 请注意上述代码中，loader.load(xxx, render)，我们希望当纹理图片加载完成后，才执行 render 渲染
 
 
 
 #### 第4步：将人口数据与地球纹理图片进行位置上的匹配
 
+**先不考虑球体，假设我们仅仅想获得一张显示人口数量分布、平面的世界地图，该如何做呢？**
+
+**代码思路：**
+
+1. 我们通过 第 2 步骤已经拿到了栅格化后的世界人口分布数据
+2. 并且我们知道栅格化的数据是由 nrow(145) 行、ncols(360) 列组成
+3. 假设 1 个数据点 对应 1 像素，那么栅格化的数据实际上对应的是一个 高 145 像素、宽 360 像素的图形
+4. 假设 数据点最小(人口最少)的地方，我们用黑色来填充，而数据点最大(人口最多)的地方用红色填充，处于中间数量的点按照比例依次进行颜色变化，那么就可以得到我们想要的图形了。
+   1. 关于某个点填充的颜色，我们使用 HSL(色相、饱和度、亮度)，其中当 人口少时 L 的值越接近于 0 (黑色)、人口多时 L 的值越接近 1 (红色)
+   2. 向画布(canvas) 某个点填充颜色，需要用到 canvas 一些相关知识，请自行先学习了解一下 canvas 相关知识
+
+**对应的代码：**
+
+```
+const hsl = (h: number, s: number, l: number) => {
+    return `hsl(${h * 360 | 0},${s * 100 | 0}%,${l * 100 | 0}%)`
+}
+
+const drawData = (ascData: ASCData) => {
+    if (canvasRef.current === null) { return }
+    const ctx = canvasRef.current.getContext('2d')
+    if (ctx === null) { return }
+
+    const range = ascData.max - ascData.min
+    ctx.canvas.width = ascData.ncols
+    ctx.canvas.height = ascData.nrows
+    ctx.fillStyle = '#444'
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+    ascData.data.forEach((row, rowIndex) => {
+        row.forEach((value, colIndex) => {
+            if (value === undefined) { return }
+            const amount = (value - ascData.min) / range
+            const hue = 1
+            const saturation = 1
+            const lightness = amount
+            ctx.fillStyle = hsl(hue, saturation, lightness)
+            ctx.fillRect(colIndex,rowIndex,1,1)
+        })
+    })
+}
+```
+
+为了让你比较直观看清，这里贴出目前我们已经写出来的代码。
+
+> 请注意下面的代码并不是我们真正示例的代码，你可以实际运行以下，查看效果
+
+```
+import { useEffect, useRef } from 'react'
+
+const loadDataFile = async (url: string) => {
+    const res = await window.fetch(url)
+    const text = await res.text()
+    return text
+}
+
+type DataType = (number | undefined)[][]
+type ASCData = {
+    data: DataType,
+    ncols: number,
+    nrows: number,
+    xllcorner: number,
+    yllcorner: number,
+    cellsize: number,
+    NODATA_value: number,
+    max: number,
+    min: number,
+}
+
+const parseData = (text: string) => {
+    const data: DataType = []
+    const settings: { [key: string]: any } = { data }
+    let max: number = 0
+    let min: number = 99999
+    text.split('\n').forEach((line) => {
+        const parts = line.trim().split(/\s+/)
+        if (parts.length === 2) {
+            settings[parts[0]] = parseFloat(parts[1])
+        } else if (parts.length > 2) {
+            const values = parts.map((item) => {
+                const value = parseFloat(item)
+                if (value === settings['NODATA_value']) {
+                    return undefined
+                }
+                max = Math.max(max, value)
+                min = Math.min(min, value)
+                return value
+            })
+            data.push(values)
+        }
+    })
+    return { ...settings, ...{ max, min } } as ASCData
+}
+
+const hsl = (h: number, s: number, l: number) => {
+    return `hsl(${h * 360 | 0},${s * 100 | 0}%,${l * 100 | 0}%)`
+}
+
+const HelloEarth = () => {
+    const canvasRef = useRef<HTMLCanvasElement>(null)
+
+    const drawData = (ascData: ASCData) => {
+        if (canvasRef.current === null) { return }
+        const ctx = canvasRef.current.getContext('2d')
+        if (ctx === null) { return }
+
+        const range = ascData.max - ascData.min
+        ctx.canvas.width = ascData.ncols
+        ctx.canvas.height = ascData.nrows
+        ctx.fillStyle = '#444'
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        ascData.data.forEach((row, rowIndex) => {
+            row.forEach((value, colIndex) => {
+                if (value === undefined) { return }
+                const amount = (value - ascData.min) / range
+                const hue = 1
+                const saturation = 1
+                const lightness = amount
+                ctx.fillStyle = hsl(hue, saturation, lightness)
+                ctx.fillRect(colIndex,rowIndex,1,1)
+            })
+        })
+
+    }
+
+    useEffect(() => {
+        if (canvasRef.current === null) { return }
+        const ascURL = require('@/assets/data/gpw_v4_2010.asc').default
+        const doSomthing = async () => {
+            try {
+                const text = await loadDataFile(ascURL)
+                const ascData = parseData(text)
+                drawData(ascData)
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        doSomthing()
+
+        return () => {
+
+        }
+    }, [canvasRef])
+    
+        return (
+        <canvas ref={canvasRef} />
+    )
+}
+
+export default HelloEarth
+```
+
+实际运行后，就会看到一张 世界人口分布的地图
+
+> 请注意这个 “看似是世界地图”的图片并不是真正的世界地理位置地图，而是人口数量分布图。
 
 
 
+**如果你已经看懂了上面的代码，那么接下来就可以真正去制作 3D 立体地球示例了。**
 
-## 
-
-#### 示例目标：
-
-1. 一个球体
-
-2. 球体表面贴上地球纹理图片
-
-   > 地球表面的纹理图片，你可以从这个地址上获取该图片：https://threejsfundamentals.org/threejs/resources/images/world.jpg
+> 本示例是我们做过的最复杂的例子，尽管我们已经进行了详细的思路解读，你一定要多看，多敲几遍，否则接下来的代码你可能更加难以理解。
 
 
 
-#### 代码思路：
+**我们需要将之前的 drawData() 修改 为 addBoxes()，并且不再是在 canvas 中绘制点，而是在球体上添加柱状物：**
 
-创建球体、加载纹理图片，这些操作我们之前都讲解过，这些并没有什么难度。
+```
+const addBoxes = (ascData: ASCData, scene: Three.Scene) => {
+    const geometry = new Three.BoxBufferGeometry(1, 1, 1)
+    geometry.applyMatrix4(new Three.Matrix4().makeTranslation(0, 0, 0.5))
+
+    const lonHelper = new Three.Object3D()
+    scene.add(lonHelper)
+
+    const latHelper = new Three.Object3D()
+    lonHelper.add(latHelper)
+
+    const positionHelper = new Three.Object3D()
+    positionHelper.position.z = 1
+    latHelper.add(positionHelper)
+
+    const range = ascData.max - ascData.min
+    const lonFudge = Math.PI * 0.5
+    const latFudge = Math.PI * -0.135
+    ascData.data.forEach((row, latIndex) => {
+        row.forEach((value, lonIndex) => {
+            if (value === undefined) { return }
+            const amount = (value - ascData.min) / range
+            const material = new Three.MeshBasicMaterial()
+            const hue = Three.MathUtils.lerp(0.7, 0.3, amount)
+            const saturation = 1
+            const lightness = Three.MathUtils.lerp(0.1, 1, amount)
+            material.color.setHSL(hue, saturation, lightness)
+            const mesh = new Three.Mesh(geometry, material)
+            scene.add(mesh)
+
+            lonHelper.rotation.y = Three.MathUtils.degToRad(lonIndex + ascData.xllcorner) + lonFudge
+            latHelper.rotation.x = Three.MathUtils.degToRad(latIndex + ascData.yllcorner) + latFudge
+
+            positionHelper.updateWorldMatrix(true, false)
+            mesh.applyMatrix4(positionHelper.matrixWorld)
+            mesh.scale.set(0.005, 0.005, Three.MathUtils.lerp(0.001, 0.5, amount))
+        })
+    })
+}
+```
+
+> 上面代码中牵扯到了非常多新的、之前从未使用过的一些函数或属性。
+
+**解释说明：**
+
+1. Three.Matrix4：WebGL 中的矩阵库
+
+2. Three.MathUtils：Three.js 中内置的一些计算函数
+
+   > 关于这些新的对象具体详细介绍，请查阅 Three.js 官方文档
 
 
 
-#### 具体代码：
+**示例所需其他代码块：**
 
-地球贴图纹理图片位于：src/assets/imgs/world.jpg
+1. 创建 3D 地球、以及加载纹理图片
+2. 添加 OrbitControls 控制，并且开启 “弹性结束控制”
+3. 添加场景渲染函数 render，并且添加 “按需渲染” 相关代码
 
-HelloEarth 位于：src/components/hello-earth/index.tsx
+
+
+**最终完整的示例代码：**
 
 ```
 import { useEffect, useRef } from 'react'
@@ -191,8 +563,120 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import './index.scss'
 
+const loadDataFile = async (url: string) => {
+    const res = await window.fetch(url)
+    const text = await res.text()
+    return text
+}
+
+type DataType = (number | undefined)[][]
+type ASCData = {
+    data: DataType,
+    ncols: number,
+    nrows: number,
+    xllcorner: number,
+    yllcorner: number,
+    cellsize: number,
+    NODATA_value: number,
+    max: number,
+    min: number,
+}
+
+const parseData = (text: string) => {
+    const data: DataType = []
+    const settings: { [key: string]: any } = { data }
+    let max: number = 0
+    let min: number = 99999
+    text.split('\n').forEach((line) => {
+        const parts = line.trim().split(/\s+/)
+        if (parts.length === 2) {
+            settings[parts[0]] = parseFloat(parts[1])
+        } else if (parts.length > 2) {
+            const values = parts.map((item) => {
+                const value = parseFloat(item)
+                if (value === settings['NODATA_value']) {
+                    return undefined
+                }
+                max = Math.max(max, value)
+                min = Math.min(min, value)
+                return value
+            })
+            data.push(values)
+        }
+    })
+    return { ...settings, ...{ max, min } } as ASCData
+}
+
+// const hsl = (h: number, s: number, l: number) => {
+//     return `hsl(${h * 360 | 0},${s * 100 | 0}%,${l * 100 | 0}%)`
+// }
+
+let renderRequested = false
+
 const HelloEarth = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null)
+
+    // const drawData = (ascData: ASCData) => {
+    //     if (canvasRef.current === null) { return }
+    //     const ctx = canvasRef.current.getContext('2d')
+    //     if (ctx === null) { return }
+
+    //     const range = ascData.max - ascData.min
+    //     ctx.canvas.width = ascData.ncols
+    //     ctx.canvas.height = ascData.nrows
+    //     ctx.fillStyle = '#444'
+    //     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+    //     ascData.data.forEach((row, rowIndex) => {
+    //         row.forEach((value, colIndex) => {
+    //             if (value === undefined) { return }
+    //             const amount = (value - ascData.min) / range
+    //             const hue = 1
+    //             const saturation = 1
+    //             const lightness = amount
+    //             ctx.fillStyle = hsl(hue, saturation, lightness)
+    //             ctx.fillRect(colIndex, rowIndex, 1, 1)
+    //         })
+    //     })
+    // }
+
+    const addBoxes = (ascData: ASCData, scene: Three.Scene) => {
+        const geometry = new Three.BoxBufferGeometry(1, 1, 1)
+        geometry.applyMatrix4(new Three.Matrix4().makeTranslation(0, 0, 0.5))
+
+        const lonHelper = new Three.Object3D()
+        scene.add(lonHelper)
+
+        const latHelper = new Three.Object3D()
+        lonHelper.add(latHelper)
+
+        const positionHelper = new Three.Object3D()
+        positionHelper.position.z = 1
+        latHelper.add(positionHelper)
+
+        const range = ascData.max - ascData.min
+        const lonFudge = Math.PI * 0.5
+        const latFudge = Math.PI * -0.135
+        ascData.data.forEach((row, latIndex) => {
+            row.forEach((value, lonIndex) => {
+                if (value === undefined) { return }
+                const amount = (value - ascData.min) / range
+                const material = new Three.MeshBasicMaterial()
+                const hue = Three.MathUtils.lerp(0.7, 0.3, amount)
+                const saturation = 1
+                const lightness = Three.MathUtils.lerp(0.1, 1, amount)
+                material.color.setHSL(hue, saturation, lightness)
+                const mesh = new Three.Mesh(geometry, material)
+                scene.add(mesh)
+
+                lonHelper.rotation.y = Three.MathUtils.degToRad(lonIndex + ascData.xllcorner) + lonFudge
+                latHelper.rotation.x = Three.MathUtils.degToRad(latIndex + ascData.yllcorner) + latFudge
+
+                positionHelper.updateWorldMatrix(true, false)
+                mesh.applyMatrix4(positionHelper.matrixWorld)
+                mesh.scale.set(0.005, 0.005, Three.MathUtils.lerp(0.001, 0.5, amount))
+            })
+        })
+    }
 
     useEffect(() => {
         if (canvasRef.current === null) { return }
@@ -200,34 +684,37 @@ const HelloEarth = () => {
         const canvas = canvasRef.current
         const renderer = new Three.WebGLRenderer({ canvas })
         const camera = new Three.PerspectiveCamera(45, 2, 0.1, 100)
-        camera.position.z = 7
+        camera.position.z = 4
         const scene = new Three.Scene()
+        scene.background= new Three.Color(0x000000)
 
         const controls = new OrbitControls(camera, canvas)
         controls.enableDamping = true
+        controls.enablePan =false
         controls.update()
 
-        const light1 = new Three.HemisphereLight(0xFFFFFF, 0xFFFFFF, 0.8)
-        scene.add(light1)
-        const light2 = new Three.DirectionalLight(0xFFFFFF, 0.4)
-        light2.position.set(2, 2, 0)
-        scene.add(light2)
-
-        const loader = new Three.TextureLoader()
-        const texture = loader.load(require('@/assets/imgs/world.jpg').default)
-        const material = new Three.MeshPhongMaterial({
-            map: texture
-        })
-        const geometry = new Three.SphereBufferGeometry(2, 32, 32)
-        const earth = new Three.Mesh(geometry, material)
-        scene.add(earth)
-
         const render = () => {
+            renderRequested = false
             controls.update()
             renderer.render(scene, camera)
-            window.requestAnimationFrame(render)
         }
-        window.requestAnimationFrame(render)
+
+        const handleChange =() =>{
+            if(renderRequested === false){
+                renderRequested = true
+                window.requestAnimationFrame(render)
+            }
+        }
+        controls.addEventListener('change',handleChange)
+
+        const loader = new Three.TextureLoader()
+        const texture = loader.load(require('@/assets/imgs/world.jpg').default, render)
+        const material = new Three.MeshBasicMaterial({
+            map: texture
+        })
+        const geometry = new Three.SphereBufferGeometry(1, 64, 32)
+        const earth = new Three.Mesh(geometry, material)
+        scene.add(earth)
 
         const handleResize = () => {
             const width = canvas.clientWidth
@@ -235,11 +722,28 @@ const HelloEarth = () => {
             camera.aspect = width / height
             camera.updateProjectionMatrix()
             renderer.setSize(width, height, false)
+
+            window.requestAnimationFrame(render)
         }
         handleResize()
         window.addEventListener('resize', handleResize)
 
+        const ascURL = require('@/assets/data/gpw_v4_2010.asc').default
+        const doSomthing = async () => {
+            try {
+                const text = await loadDataFile(ascURL)
+                const ascData = parseData(text)
+                //drawData(ascData)
+                addBoxes(ascData, scene)
+                render()
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        doSomthing()
+
         return () => {
+            controls.removeEventListener('change',handleChange)
             window.removeEventListener('resize', handleResize)
         }
     }, [canvasRef])
@@ -252,5 +756,17 @@ const HelloEarth = () => {
 export default HelloEarth
 ```
 
+调试运行，首先就会看到一个 3D 立体地球，等待 1 秒左右，待 .asc 数据加载并解析、添加地球上的柱状物后，就会看到本示例所想演示的最终效果。
 
+> 终于终于到这一步了
+
+不过当你鼠标拖动地球时，会感受到略微卡顿，或者说不够流畅。
+
+那么接下来，就到了本文的核心内容：通过 合并对象 来达到优化场景的目的。
+
+
+
+## 优化代码：合并对象
+
+在上面的示例代码中，首先我们先分析一下为什么会出现不够流畅，卡顿的现象。
 

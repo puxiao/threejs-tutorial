@@ -538,11 +538,23 @@ const addBoxes = (ascData: ASCData, scene: Three.Scene) => {
 
 **解释说明：**
 
-1. Three.Matrix4：WebGL 中的矩阵库
+1. 栅格化数据 和 纹理图片 均可看作是 2D 矩形坐标，最终需要转化为 3D 球体坐标，转化过程中 lonFudge、latFudge 具体作用机理，暂时还没搞明白。
 
-2. Three.MathUtils：Three.js 中内置的一些计算函数
+   > 先记住转化公式，以后再慢慢研究
+
+   > 栅格化数据 为 360 * 145、纹理图片为 2048 * 1024
+
+2. Three.Matrix4：WebGL 中的矩阵库
+
+3. Three.MathUtils：Three.js 中内置的一些计算函数
 
    > 关于这些新的对象具体详细介绍，请查阅 Three.js 官方文档
+
+4. lonHelper用于赤道上的经度旋转、latHelper用于维度旋转、positionHelper用于 Z 轴(地球地面)上的偏移。
+
+5. lonFudge 的值为 Math.PI * 0.5，也就是相当于 1/4 个圆(地球 1/4 圈)
+
+6. latFudge 的值为 Math.PI * -0.135，这里的 -0.135 不太清楚是怎么得出来的，但是大概率推测它是用来将柱状物与纹理图片对齐的
 
 
 
@@ -766,7 +778,223 @@ export default HelloEarth
 
 
 
+#### 补充：启用浏览器 调试工具 DevTool 的 Rendering 查看渲染性能
+
+除了浏览器本身的 性能(Performance) 面板外，还有另外一个重要的、方便我们查看页面渲染性能的工具——Rendering。
+
+**通过谷歌调试工具 Rendering，查看当前页面渲染性能情况：**
+
+1. 打开浏览器调试工具 DevTool
+
+2. 点击右侧 3 个小圆点
+
+3. 鼠标移动到 More tools
+
+4. 点击 Rendering
+
+5. 在新出现的 Rendering 面板中，勾选 Frame Rendering Stats
+
+   > 备注：在旧的谷歌浏览器中，应该勾选的是 Show FPS meter
+
+这样就可以在网页左上角，实时看到当前渲染性能状况。
+
+
+
+**性能数据解读：**
+
+性能展示的数据，主要 2 个模块：Frames 和 GPU
+
+**GPU 相关：**
+
+1. GPU raster ：on  表示 GPU 光栅化已开启
+
+2. GPU memory：GPU 已用大小、GPU 最大可用大小
+
+   > 在本示例中，通常是当修改浏览器尺寸时，此时需要大量计算，会显示出 GPU memory
+   >
+   > 在普通的 鼠标拖拽 改变地球视角时，不会显示 GPU memory
+
+**Frames相关：**
+
+假设某一时刻，渲染性能结果为 Frames：63% 1082(0m) dropped of 2737
+
+对应的解读为：
+
+第1个数字 63% —— 63% 的帧按时渲染完成
+
+第2个数字 1082 —— 有 1082 个合成帧丢失(未渲染)
+
+第3个数字 0m —— 有 0 个帧丢失
+
+第4个数字 2737 —— 原本计划渲染 2737 个帧
+
+数字之间的计算关系为 63% ≈ 1 - (1082 + 0 )/ 2737
+
+也就是说 第2个数字(丢失的合成帧)越小，那么整体按时完成渲染帧的百分比(第1个数字)越大，意味着此刻网页越流畅。
+
+
+
 ## 优化代码：合并对象
 
-在上面的示例代码中，首先我们先分析一下为什么会出现不够流畅，卡顿的现象。
+#### 核心代码分析
 
+在上面的示例代码中，lonHelper用于赤道上的经度旋转、latHelper用于维度旋转、positionHelper用于 Z 轴(地球地面)上的偏移。
+
+> 默认 Three.js 中物体是有 1/2 位于 Z 轴之下的，通过Z轴的偏移让柱状物可以完全出现在地面上
+
+每一个数据点(柱状物)都创建了一个 MeshBasicMaterial 和 Mesh。
+
+我们的数据点一共为 145行、360列，那么就意味着假设全部数据点都有数据，那么数据点总数量为：145 * 360 = 52200，但是考虑到有非常多的数据点的值为 -9999(NODATA_value)，也就是没有值，不需要绘制，那么减去这些没有数据点，**最终需要绘制的数据点(柱状物)大约为 19000 个**。
+
+**柱状物19000个，再加上对应的 3 个辅助对象(lonHelper、latHelper、positionHelper)，相当于总绘制数量为 19000 * 4 = 76000。**
+
+也就是说每一次场景更新，大约需要绘制 7.6 万个对象，所以这才造成了卡顿现象。
+
+
+
+**通过谷歌调试工具，查看当前页面GPU渲染使用情况：**
+
+1. 
+
+
+
+
+**如何解决卡顿？减少需要渲染对象的数量！**
+
+还记得我们刚才统计的渲染对象数量吗？
+
+1. 柱状体 约 19000个
+2. 每个柱状体对应 3 个辅助对象 19000 * 3
+
+我们需要做的就是把所有的柱状体合并成一个物体，也就是说原本需要渲染 19000 个柱状体，合并之后只需渲染 1 个，让柱状体数量减少 18999 个。
+
+
+
+**修改 addBoxes 函数代码：**
+
+```
+import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils'
+
+const addBoxes = (ascData: ASCData, scene: Three.Scene) => {
+    //const geometry = new Three.BoxBufferGeometry(1, 1, 1)
+    //geometry.applyMatrix4(new Three.Matrix4().makeTranslation(0, 0, 0.5))
+
+    const lonHelper = new Three.Object3D()
+    scene.add(lonHelper)
+
+    const latHelper = new Three.Object3D()
+    lonHelper.add(latHelper)
+
+    const positionHelper = new Three.Object3D()
+    positionHelper.position.z = 1
+    latHelper.add(positionHelper)
+
+    const originHelper = new Three.Object3D()
+    originHelper.position.z = 0.5
+    positionHelper.add(originHelper)
+
+    const range = ascData.max - ascData.min
+    const lonFudge = Math.PI * 0.5
+    const latFudge = Math.PI * -0.135
+    const geometries: Three.BoxBufferGeometry[] = []
+    const color = new Three.Color()
+    ascData.data.forEach((row, latIndex) => {
+        row.forEach((value, lonIndex) => {
+            if (value === undefined) { return }
+            const amount = (value - ascData.min) / range
+            //const material = new Three.MeshBasicMaterial()
+            //const hue = Three.MathUtils.lerp(0.7, 0.3, amount)
+            //const saturation = 1
+            //const lightness = Three.MathUtils.lerp(0.1, 1, amount)
+            //material.color.setHSL(hue, saturation, lightness)
+            //const mesh = new Three.Mesh(geometry, material)
+            //scene.add(mesh)
+
+            const geometry = new Three.BoxBufferGeometry(1, 1, 1)
+
+            lonHelper.rotation.y = Three.MathUtils.degToRad(lonIndex + ascData.xllcorner) + lonFudge
+            latHelper.rotation.x = Three.MathUtils.degToRad(latIndex + ascData.yllcorner) + latFudge
+
+            //positionHelper.updateWorldMatrix(true, false)
+            //mesh.applyMatrix4(positionHelper.matrixWorld)
+            //mesh.scale.set(0.005, 0.005, Three.MathUtils.lerp(0.001, 0.5, amount))
+
+            positionHelper.scale.set(0.005, 0.005, Three.MathUtils.lerp(0.01, 0.5, amount))
+            originHelper.updateWorldMatrix(true, false)
+            geometry.applyMatrix4(originHelper.matrixWorld)
+
+            const hue = Three.MathUtils.lerp(0.7, 0.3, amount)
+            const saturation = 1
+            const lightness = Three.MathUtils.lerp(0.1, 1, amount)
+            color.setHSL(hue, saturation, lightness)
+            const rgb = color.toArray().map((value) => {
+                return value * 255
+            })
+
+            const numVerts = geometry.getAttribute('position').count
+            const itemSize = 3
+            const colors = new Uint8Array(itemSize * numVerts)
+
+            //这里有一个稍微奇葩点的写法，就是使用下划线 _ 来起到参数占位的作用
+            colors.forEach((_, index) => {
+                colors[index] = rgb[index % 3]
+            })
+
+            const normalized = true
+            const colorAttrib = new Three.BufferAttribute(colors, itemSize, normalized)
+            geometry.setAttribute('color', colorAttrib)
+
+            geometries.push(geometry)
+        })
+    })
+    const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries)
+    //const material = new Three.MeshBasicMaterial({ color: 'red' })
+    const material = new Three.MeshBasicMaterial({
+        vertexColors: true
+    })
+    const mesh = new Three.Mesh(mergedGeometry, material)
+    scene.add(mesh)
+}
+```
+
+> 上述代码中，注释部分为之前 addBoxes() 函数的代码，除了 //const material = new Three.MeshBasicMaterial({ color: 'red' }) 这一行
+
+**代码解析：**
+
+1. 合并所有的柱状物，使用到了一个新的函数 BufferGeometryUtils.mergeBufferGeometries()
+
+   > 注意：BufferGeometryUtils 并非来自 Three，而是来自 'three/examples/jsm/utils/BufferGeometryUtils'
+
+2. 柱状物的颜色，不再使用 color 设定，而是启用了 “顶点着色”。
+
+> 关于这 2 个大的知识点，可以去阅读 Three.js 官方文档
+
+> 需要恶补官方文档，如果只是看了本教程，那么还会有大量的知识点未曾接触。
+
+
+
+经过合并优化后的场景，在浏览器中运行，比之前的流畅非常多，没有卡顿的现象了。
+
+> 我本机电脑硬件配置比较高，我分别记录了 Rendering 面板中 优化前后的 Frames 值。
+>
+> 优化前：顺利渲染帧的百分比约为 60%
+>
+> 优化后：顺利渲染帧的百分比约为 90%
+>
+> 可见网页流畅度确实提高了很多
+
+
+
+#### 本文小结：
+
+**在 Three.js 大型的场景中，绝大多数都需要采用合并对象的策略来优化渲染性能。**
+
+合并对象可以减少需要渲染的对象数量，并且还可以将有一些根本不可见的面进行删除，减少渲染面，提高渲染性能。
+
+
+
+你以为就这样可以结束了？
+
+事实上还有优化空间，本文先到这里结束。
+
+下一篇将继续优化这个场景。

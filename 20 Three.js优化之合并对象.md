@@ -67,7 +67,7 @@ https://sedac.ciesin.columbia.edu/data/set/gpw-v4-admin-unit-center-points-popul
 
 我们选择不使用最新的 2020 年数据，而是使用 2010 年的结果。
 
-为了方便你获得到 2010 年人口统计结果，你可以直接点击下面这个地址，直接下载：
+为了方便你获得到 2010 年男性人口统计结果，你可以直接点击下面这个地址，直接下载：
 
 https://threejsfundamentals.org/threejs/resources/data/gpw/gpw_v4_basic_demographic_characteristics_rev10_a000_014mt_2010_cntm_1_deg.asc
 
@@ -75,11 +75,15 @@ https://threejsfundamentals.org/threejs/resources/data/gpw/gpw_v4_basic_demograp
 
 > 该人口统计数据文件格式为 .asc，至于如何解析该文件，我们会稍后讲解
 
+> 为啥是男性人口统计？女性人口呢？为什么不是全部人口统计呢？  
+> 因为在下一篇文章中，就会有女性人口统计，然后做出同一个地区 男女人口数量比较 的动画  
+> 为了简化，本文下面文字中，将忽略 “男性人口数量” 这个概念，统一称呼为 “人口数据”
+
 
 
 **第2问：人口数据和地区的对应关系，如何表现在地球上？**
 
-我们把刚才下载得到的人口统计数据文件，重命名为 gpw_v4_2010.asc，然后将该文件移动到：src/assets/data/ 目录中。
+我们把刚才下载得到的人口统计数据文件，重命名为 gpw_v4_014mt_2010.asc，然后将该文件移动到：src/assets/data/ 目录中。
 
 点击该文件，用记事本查看该文件内容，你会发现里面大致为以下内容：
 
@@ -150,9 +154,9 @@ NODATA_value  -9999
 
 
 
-#### 第1步：加载人口数据文件(gpw_v4_2010.asc)
+#### 第1步：加载人口数据文件(gpw_v4_014mt_2010.asc)
 
-1. **数据文件路径为 ./src/assets/data/gpw_v4_2010.asc**
+1. **数据文件路径为 ./src/assets/data/gpw_v4_014mt_2010.asc**
 
 2. **由于我们使用 alias 来得到 .asc 文件编译后的路径，所以请记得：**
 
@@ -182,7 +186,7 @@ const loadDataFile = async (url: string) => {
     }
 }
 
-const ascURL = require('@/assets/data/gpw_v4_2010.asc').default
+const ascURL = require('@/assets/data/gpw_v4_014mt_2010.asc').default
 loadDataFile(ascURL)
 ```
 
@@ -454,7 +458,7 @@ const HelloEarth = () => {
 
     useEffect(() => {
         if (canvasRef.current === null) { return }
-        const ascURL = require('@/assets/data/gpw_v4_2010.asc').default
+        const ascURL = require('@/assets/data/gpw_v4_014mt_2010.asc').default
         const doSomthing = async () => {
             try {
                 const text = await loadDataFile(ascURL)
@@ -740,7 +744,7 @@ const HelloEarth = () => {
         handleResize()
         window.addEventListener('resize', handleResize)
 
-        const ascURL = require('@/assets/data/gpw_v4_2010.asc').default
+        const ascURL = require('@/assets/data/gpw_v4_014mt_2010.asc').default
         const doSomthing = async () => {
             try {
                 const text = await loadDataFile(ascURL)
@@ -849,12 +853,6 @@ export default HelloEarth
 **柱状物19000个，再加上对应的 3 个辅助对象(lonHelper、latHelper、positionHelper)，相当于总绘制数量为 19000 * 4 = 76000。**
 
 也就是说每一次场景更新，大约需要绘制 7.6 万个对象，所以这才造成了卡顿现象。
-
-
-
-**通过谷歌调试工具，查看当前页面GPU渲染使用情况：**
-
-1. 
 
 
 

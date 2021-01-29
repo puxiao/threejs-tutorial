@@ -513,7 +513,32 @@ if ( state !== STATE.NONE ) {
 
 
 
+**除了模拟出 DOM 元素的各种事件之外，还需要模拟出其他一些内容：**
+
+> 你可以先想一下常见 DOM 元素还有哪些常用的属性或方法？
+
+1. event.preventDefault、event.stopPropagation：事件冒泡相关设置
+2. focus()：设置 DOM 元素为当前焦点
+3. clientWidth、clientHeight：对象原始宽高
+4. getBoundingClientRect()：获取元素显示大小、相对浏览器视窗的位置
+
+
+
 思路理清之后，剩下的就容易了。
 
 
+
+有 2 个思路途径：
+
+1. 使用 Three.js 提供的 EventDispatcher
+
+   ```
+   import { EventDispatcher } from 'three'
+   ```
+
+2. 使用 原生 JS 提供的 EventTarget 
+
+
+
+额~ 因为最近接了一个设计的活，本文先暂停更新几天。
 

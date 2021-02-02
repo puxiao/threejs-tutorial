@@ -540,5 +540,42 @@ if ( state !== STATE.NONE ) {
 
 
 
-额~ 因为最近接了一个设计的活，本文先暂停更新几天。
+我们这里使用 Three.js 提供的 EventDispatcher。
+
+> 原生 JS 中内置的 EventTarget 本质上也是一种内置的对象而已，和我们使用 Three.js 提供的 EventDispatcher 区别并不大。
+
+
+
+接下来开始讲解具体如何实现 “虚拟DOM对象(真实 DOM 事件代理对象)”。
+
+> 过程略微有点复杂，我尽量讲清楚。
+
+
+
+#### 实现思路和代码片段
+
+**第1步：先定义好我们准备 ‘复制(代理)’ 各种事件中的属性名**
+
+```
+//鼠标事件，我们需要复制的属性名
+const mouseEventProperties = ['ctrlKey', 'metaKey', 'shiftKey', 'button', 'clientX', 'clientY', 'pageX', 'pageY']
+
+//鼠标滚轴事件，我们需要复制的属性名
+const wheelEventProperties = ['deltaX','deltaY']
+
+//键盘事件，我们需要复制的属性名
+const keyboardEventProperties = ['ctrlKey','metaKey','shiftKey','keyCode']
+```
+
+
+
+**第2步：定义负责拷贝指定属性的函数**
+
+```
+const copyProperties = (src: any, properties: string[], dst: any) => {
+    properties.forEach((key) => {
+        dst[key] = src[key]
+    })
+}
+```
 

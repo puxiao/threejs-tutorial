@@ -12,7 +12,7 @@ yarn global add create-react-app
 
 **第2步：初始化React+TypeScript项目**
 
-> 我用的是 create-react-app 4.0.1版本，对应的是 React 17.0.1
+> 我用的是 create-react-app 4.0.2 版本，对应的是 React 17.0.1
 
 ```
 yarn create react-app test-threejs --template typescript
@@ -67,7 +67,7 @@ yarn add --dev react-app-rewired react-app-rewire-alias
 
    > 我们暂时先添加 2 个路径映射 src 和 components，具体路径还会根据将来实际开发过程中所需要创建不同的目录结构进行修改。
    >
-   > 补充：根据 typescript 4.0.1 官方更新说明文档，baseUrl 这一项是可以省略的，但是上面代码中还是遵循了之前的配置方式，继续添加上了 baseUrl。
+   > 补充：根据 typescript 官方更新说明文档，baseUrl 这一项是可以省略的，但是上面代码中还是遵循了之前的配置方式，继续添加上了 baseUrl。
 
 2. 在项目根目录，新建文件 config-overrides.js，内容为：
 
@@ -176,12 +176,10 @@ yarn add --dev react-app-rewired react-app-rewire-alias
 **第7步：安装 scss**
 
 ```
-//sass最新版本为 5.0.0
-//但是由于目前 create-react-app 中的 sass-loader 目前不支持 sass 5，所以只能先安装 sass 4
-yarn add node-sass@4.14.1 --dev
+yarn add node-sass --dev
 ```
 
-安装完成过后，即可将项目中的 .css 文件修改为 .scss 文件
+> 假设你使用的是较早版本的 create-react-app，那么当时还不支持最新版 node-sass 5.0，所以你只能安装： `yarn add node-sass@4.14.1 --dev`
 
 
 
@@ -189,7 +187,7 @@ yarn add node-sass@4.14.1 --dev
 
 ```
 //npm install --save three
-yarn add three --save
+yarn add three
 ```
 
 注意：**默认 three 模块已经内置了对应的 xxx.d.ts 文件**，因此我们可以直接在 VScode 中获取对应的 TypeScript 语法提示。

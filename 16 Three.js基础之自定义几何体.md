@@ -1,5 +1,17 @@
 # 16 Three.js基础之自定义几何体
 
+以下内容更新于2021年2月12日
+
+今天更新了 Three.js ，将版本升级为最新的 0.125.2，发现官方已经将 Geometry 从核心库中移除，改为：
+
+import { Geometry } from 'three/examples/jsm/deprecated/Geometry'
+
+还有 Three.Mesh() 函数中的参数也发生了变化，因此本文中的代码在最新的版本中，是无法运行的。
+
+你可以先跳过本章，继续后面的学习。
+
+
+
 本文说的 几何体(geometry)，也就是之前 “05 Three.js基础之图元.md” 中的 图元(primitives)。
 
 > 图元和几何体只是同一个对象(事物)的不同的叫法而已。

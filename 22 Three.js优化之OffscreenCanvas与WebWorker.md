@@ -698,7 +698,7 @@ https://developer.mozilla.org/zh-CN/docs/Web/API/MutationObserver
 DOMEvent 的主要内容有：
 
 1. type：交互事件类型名称，有 resize、contextmenu、mousedown、mousemove、mouseup、touchstart、touchmove、wheel、keydown
-2. preventDefault、stopPropagation：阻止事件冒泡函数
+2. preventDefault()、stopPropagation()：阻止事件冒泡的函数
 3. `[key: string]: any`：这里虚拟定义了一些属性值，例如鼠标事件对应的一些属性值 clientX/clientY/pageX....，或 触摸事件对应的 pageX/pageY 等。
 
 **具体代码：**
@@ -706,8 +706,8 @@ DOMEvent 的主要内容有：
 ```
 export interface DOMEvent {
     type: string
-    preventDefault: () => void
-    stopPropagation: () => void
+    preventDefault(): void
+    stopPropagation(): void
     [key: string]: any
 }
 ```
@@ -903,4 +903,166 @@ export default ElementProxyReceiver
 ```
 
 
+
+### 管理模拟DOM元素的类：ProxyManager
+
+ProxyManager 用来管理 模拟的DOM元素，具体的属性和方法有：
+
+1. targets：内部用来存放所有 模拟的 DOM 元素集合
+
+   > 我们使用 Object 来作为储存集合的类型，事实上也可以使用 Map 这种类型。
+
+2. makeProxy()：负责创建 模拟的 DOM 元素。
+
+3. getProxy()：负责获取 模拟的 DOM 元素
+
+4. deleteProxy()：负责删除 模拟的 DOM 元素
+
+5. handleProxyMessage()：负责接收事件调度命令，并将该调度命令转发给指定的 模拟的 DOM 元素
+
+   > 在原版教程中，使用的是 handleEvent()，但是我认为原版教程中的 handleEvent() 名称很容易让人误解为这是一个事件处理函数，事实上并不是事件，而是普通的调用函数。
+   >
+   > 同时为了避免容易和 ElementProxyReceiver 的 handEvent() 混淆，所以我才使用 handleProxyMessage() 的。
+
+
+
+**具体代码形式 1：**
+
+先看一下，假设 targets 为 Object 类型时对应的代码。
+
+```
+import ElementProxyReceiver from "./element-proxy-receiver"
+import { WorkerMessage } from "./worker-message"
+
+export interface ProxyMessageData {
+    id: number,
+    message: WorkerMessage
+}
+
+class ProxyManager {
+
+    targets: { [key: number]: ElementProxyReceiver }
+
+    constructor() {
+        this.targets = {}
+        this.handleProxyMessage = this.handleProxyMessage.bind(this)
+    }
+
+    makeProxy(id: number) {
+        const proxy = new ElementProxyReceiver()
+        this.targets[id] = proxy
+    }
+
+    getProxy(id: number) {
+        return this.targets[id]
+    }
+
+    deleteProxy(id: number) {
+        delete this.targets[id]
+    }
+
+    handleProxyMessage(data: ProxyMessageData) {
+        this.targets[data.id].handleEvent(data.message)
+    }
+}
+
+export default ProxyManager
+```
+
+> 上面中的 id 我们选择 number，而非 string 的原因是：我们在后面需要定义的 ElementProxy 中，可以不断 将数字 id++ 从而获得新的 id 值。
+
+
+
+**具体代码形式 2：**
+
+如果 targets 我们不使用 Object 类型，而是使用 Map 类型，那么就可以利用 Map 的特性额外延展出其他非常多的方法，例如 hasProxy() 等，虽然这些方法对我们本示例来说并没有用到，但是还是使用 Map 定义一次。
+
+如果使用 Map 类型，那么代码如下：
+
+```
+import ElementProxyReceiver from "./element-proxy-receiver"
+import { WorkerMessage } from "./worker-message"
+
+export interface ProxyMessageData {
+    id: number,
+    message: WorkerMessage
+}
+
+class ProxyManager {
+
+    targets: Map<number, ElementProxyReceiver>
+
+    constructor() {
+        this.targets = new Map()
+        this.handleProxyMessage = this.handleProxyMessage.bind(this)
+    }
+
+    makeProxy(id: number) {
+        return this.targets.set(id, new ElementProxyReceiver())
+    }
+
+    getProxy(id: number) {
+        return this.targets.get(id)
+    }
+
+    deleteProxy(id: number) {
+        return this.targets.delete(id)
+    }
+
+    handleProxyMessage({ id, message }: ProxyMessageData) {
+        const element = this.targets.get(id)
+        if (element) {
+            element.handleEvent(message)
+        } else {
+            throw new Error(`ProxyManager: Can't find target by id ${id}`)
+        }
+    }
+}
+
+export default ProxyManager
+```
+
+> 我们通过 `targets: Map<number, ElementProxyReceiver>` 这种形式 可以约束 targets 的结构类型。
+
+> 你可能注意到，在上面代码中 setProxy()、deleteProxy() 分别新增了 return ，这样其实是利用了 Map 类型的一些操作特性，让我们的函数不光可以执行，而且还可以返回执行结果。
+
+> 同时，我们也将 handleProxyMessage(data: ProxyMessageData) 参数 data 进行了解构。
+
+
+
+虽然看上去使用 Map 要比 Object 的代码量更多，但是 Map 这种写法会让我们的代码更加严谨。
+
+> 当然事实情况是我们的 ProxyManager 操作并不会频繁，使用哪种方式差别不大，所以以上 2 种定义 ProxyManger 的代码都是可以的。
+
+
+
+**补充说明：**
+
+在我看来，如果项目本身并不复杂，且网页需要管理的用户交互操作只有一个 DOM 元素，那么我们是完全没有必要使用 ProxyManager 的。
+
+但是原版教程中既然这样做了，那我也对应的实现一下 ProxyManager。
+
+
+
+**关于 ProxyManager 作用的再次补充说明 ：**
+
+事实上你可以将 ProxyManager 简单粗暴的理解成 document，也就是说：
+
+1. ProxyManager.makeProxy() 理解成 document.createElement()
+2. ProxyManage.getProxy() 理解成 document.getElementById()
+
+
+
+至此，我们目前已经实现的有：
+
+1. 模拟 DOM 元素的 ElementProxyReceiver
+2. 模拟 DOM 事件的 DOMEvent
+3. 模拟 document 的 ProxyManager
+4. 定义 主线程与 web worker 发送消息格式的 WorkerMessage
+
+接下来就需要来实现负责 主线程与 web worker 之间搭建沟通桥梁的 ElementProxy。
+
+
+
+### 负责主线程与WebWorker通信的类：ElementProxy
 

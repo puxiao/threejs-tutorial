@@ -2,6 +2,8 @@
 
 我们知道 JS 是单线程，可以通过 WebWorker 将一些复杂计算执行命令从主线程中分离出来。
 
+
+
 关于 WebWorker 的使用方法，请参考：
 
 https://developer.mozilla.org/zh-cn/docs/web/api/web_workers_api/using_web_workers
@@ -9,6 +11,8 @@ https://developer.mozilla.org/zh-cn/docs/web/api/web_workers_api/using_web_worke
 或者查看我写的另外一篇文章：[WebWorker学习笔记.md](https://github.com/puxiao/notes/blob/master/WebWorker%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0.md)
 
 
+
+<br>
 
 一些比较新的浏览器(例如谷歌浏览器) 还有另外一个和 WebWorker 搭配使用、针对画布的类：OffscreenCanvas。
 
@@ -23,6 +27,8 @@ https://developer.mozilla.org/zh-cn/docs/web/api/web_workers_api/using_web_worke
 > 和 OffscreenCanvas 类似的还有 ArrayBuffer、 MessagePort、ImageBitmap，他们都可以与 WebWorker 搭配使用
 
 
+
+<br>
 
 ## OffscreenCanvas的概念和用法
 
@@ -44,11 +50,15 @@ https://developer.mozilla.org/zh-cn/docs/web/api/web_workers_api/using_web_worke
 
 
 
+<br>
+
 **如何创建 OffscreenCanvas ？**
 
 不可以使用 new OffscreenWorker() 的方式来创建 OffscreenCanvas，而是使用 canvas.transferControlToOffscreen() 来获得 canvas 对应的 OffscreenCanvas。
 
 
+
+<br>
 
 **如何检测当前浏览器是否支持 OffscreenCanvas？**
 
@@ -91,6 +101,8 @@ if(canvas.transferControlToOffscreen !== null){
 
 
 
+<br>
+
 #### OffscreenCanvas的用法
 
 > 再次强调：通常情况下 OffscreenCanvas 必须搭配 Web Worker 一起使用。
@@ -126,6 +138,8 @@ if(canvas.transferControlToOffscreen !== null){
 
 
 
+<br>
+
 **实际差异：**
 
 刚才将的是理论上大体步骤，但是由于我们本教程的示例代码，实际上是运行在 React + TypeScript 环境上的，也就是说我们需要编写的是 worker.ts 而不是 worker.js。
@@ -144,11 +158,15 @@ if(canvas.transferControlToOffscreen !== null){
 
 
 
+<br>
+
 ## 离屏画布渲染示例：HelloOffscreenCanvas
 
 假设你已经配置好了 worker-loader，那么我们开始本示例。
 
 
+
+<br>
 
 #### 示例目标：
 
@@ -157,12 +175,16 @@ if(canvas.transferControlToOffscreen !== null){
 
 
 
+<br>
+
 **补充说明：**
 
 1. 我们场景中动画渲染本身计算量并不是很大，即使我们不使用 web worker 浏览器也不会卡顿，但本示例只是为了演示如何使用 OffscreenCanvas + Worker。
 2. 我们先假设你的浏览器是支持 OffscreenCanvas 的。
 
 
+
+<br>
 
 #### 关键点说明：
 
@@ -195,6 +217,8 @@ if(canvas.transferControlToOffscreen !== null){
 
 
 
+<br>
+
 #### 其他补充：
 
 由于 worker 本身无法获取 DOM ，以及无法获取浏览器某些事件，例如浏览器的窗口大小变动事件。
@@ -208,6 +232,8 @@ if(canvas.transferControlToOffscreen !== null){
 接下来，就开始具体编写代码吧。
 
 
+
+<br>
 
 #### message-data.ts
 
@@ -240,6 +266,8 @@ export type MessageData =
 ```
 
 
+
+<br>
 
 #### worker.ts
 
@@ -319,6 +347,8 @@ export { }
 
 
 
+<br>
+
 #### index.tsx
 
 > src/components/hello-offscreen-canvas/index.tsx
@@ -382,6 +412,8 @@ export default HelloOffscreenCanvas
 
 
 
+<br>
+
 **接下来我们要解决 2 个问题：**
 
 1. 控制 3D 场景用到的 OrbitControls 类，在新建时需要传递 HTML DOM 元素，交互的过程中需要 DOM 元素的鼠标事件和键盘事件，但是 worker 内部又不能访问 DOM 元素，那该如何解决？
@@ -392,7 +424,13 @@ export default HelloOffscreenCanvas
 
 
 
+<br>
+
 ## 模拟并添加OrbitControls
+
+> 你需要先忘记我们上面刚才讲过的示例代码，本小节中所有的代码和上面示例代码没有任何关联。
+
+
 
 #### 目前无法使用OrbitControls的困境
 
@@ -416,6 +454,8 @@ OrbitControls 构造函数第 2 个参数无论是 canvas 还是 window.body，�
 
 
 
+<br>
+
 #### 那么究竟该怎么办呢？
 
 我们先研究一下 OrbitControls 的源码：
@@ -423,6 +463,8 @@ OrbitControls 构造函数第 2 个参数无论是 canvas 还是 window.body，�
 https://github.com/mrdoob/three.js/blob/dev/examples/jsm/controls/OrbitControls.js
 
 
+
+<br>
 
 我把源码中和 Dom 元素相关的一些关键代码摘录出来：
 
@@ -438,7 +480,7 @@ var OrbitControls = function ( object, domElement ) {
 //添加鼠标右键(上下文)菜单事件侦听
 scope.domElement.addEventListener( 'contextmenu', onContextMenu);
 
-//添加触控笔摁下事件侦听
+//添加触控笔和鼠标摁下事件侦听
 scope.domElement.addEventListener( 'pointerdown', onPointerDown);
 
 //添加鼠标滚轴事件侦听
@@ -453,13 +495,17 @@ scope.domElement.addEventListener( 'touchmove', onTouchMove);
 scope.domElement.addEventListener( 'keydown', onKeyDown);
 	
 if ( state !== STATE.NONE ) {
-    //添加触控笔移动事件侦听
+    //添加触控笔和鼠标移动事件侦听
     scope.domElement.ownerDocument.addEventListener( 'pointermove', onPointerMove, false );
-    //添加触控笔离开事件侦听
+    //添加触控笔和鼠标松开事件侦听
     scope.domElement.ownerDocument.addEventListener( 'pointerup', onPointerUp, false );
     scope.dispatchEvent( startEvent );
 }
 ```
+
+> 补充说明：在最新的浏览器事件中 pointer 相关事件即包含触控笔，也包含鼠标。所以 pointerdown、pointermove、pointerup 这 3 个事件对应 触控笔或鼠标 对应的事件，相当于是 2 者的合体。
+
+<br>
 
 从上面可以看出，我们初始化传递给 OrbitControls 的 DOM 元素主要是用来添加各种事件侦听。
 
@@ -469,13 +515,17 @@ if ( state !== STATE.NONE ) {
 
 
 
+<br>
+
 **重点来了，请听好：**
 
 1. 既然 OrbitControls 需要 DOM 元素的目的是为了获取并添加各种事件侦听
 
 2. 而 Worker 中无法获取 DOM 元素
 
-3. 那么有没有可能我们虚拟出来一个对象，让该对象拥有和 DOM 元素相同的事件 API
+3. 那么有没有可能我们虚拟出来一个对象，让该对象拥有和 DOM 元素相同的事件 API 
+
+   > 换句话说，就是让这个虚拟出来的对象具备抛出事件的能力
 
    > 补充一点，这里说的 DOM 事件其实有 2 种：
    >
@@ -488,6 +538,8 @@ if ( state !== STATE.NONE ) {
 5. 也就是说让这个虚拟对象代替真实的 DOM 元素，以此来解决我们目前的困境
 
 
+
+<br>
 
 **思路有了，那该具体怎么做呢？**
 
@@ -511,11 +563,23 @@ if ( state !== STATE.NONE ) {
 
    > 注意：由于 OrbitControls 仅使用到键盘 上/下/左/右 4 个键，我们还可以主动过滤掉一些无用的摁键，换句话说也就是提前判断一下是否是以上 4 个方向键，如果不是，则直接跳过，不传递该事件
 
-3. 对于鼠标事件，OrbitControls 需要使用到该事件的 ctrlKey、metaKey、shiftKey、button、clientX、clientY、pageX、pageY 值
+   > 注意：对于目前版本 Three.js r126 版本而言，OrbitControls 键盘事件读取使用的是 keyCode，但是 event.keyCode 事实上已经不被推荐使用，建议使用 event.code 属性。
+   >
+   > 所以我顺带向 Three.js 官方提交了 PR，将 keyCode 修改为 code，这个 PR 已经被官方审查通过了，会在 r127 版本中使用。因此，我也成为 Three.js 代码贡献者了。
+   >
+   > 我提交的这个 PR：https://github.com/mrdoob/three.js/pull/21409
+
+   > 关于为什么不再推荐使用 event.keyCode 主要是因为 keyCode 不能够比较清晰正确返回键盘所摁键，例如 冒号和分号 都是同一个键，此时 keyCode 就无法精确区分。
+
+3. 对于鼠标事件，OrbitControls 需要使用到该事件的 pointerType、button、clientX、clientY、ctrlKey、metaKey、shiftKey 值
 
 4. 对于触摸(touch)事件，OrbitControls 需要使用每一个 触摸点的 pageX、pageY 属性值
 
 5. ...
+
+
+
+<br>
 
 我们需要让 “虚拟对象” 抛出 “虚拟事件”，并且虚拟事件拥有上面那些属性值。
 
@@ -529,6 +593,57 @@ if ( state !== STATE.NONE ) {
 
 
 
+<br>
+
+**属性补充说明：**
+
+在 OrbitControls 内部，还会对监听的 DOM 元素的根元素添加 2 个事件侦听。
+
+```
+// scope = this
+scope.domElement.ownerDocument.addEventListener( 'pointermove', onPointerMove );
+scope.domElement.ownerDocument.addEventListener( 'pointerup', onPointerUp );
+```
+
+因此我们模拟的元素还要拥有 .ownerDocument 属性值。
+
+> 在后面的实际代码中你会看到，我们会让 模拟元素 .ownerDocument 指向自身。
+>
+> this.ownerDocument = this
+
+
+
+<br>
+
+**document补充说明：**
+
+在 OrbitControls 类的构造函数中，有以下代码：
+
+```
+if ( domElement === undefined ) console.warn( 'THREE.OrbitControls: The second parameter "domElement" is now mandatory.' );
+
+if ( domElement === document ) console.error( 'THREE.OrbitControls: "document" should not be used as the target "domElement". Please use "renderer.domElement" instead.' );
+```
+
+也就是说在初始化 OrbitControls 时会对要侦听的 DOM 元素进行检查。在第 2 行代码中需要使用到 document 这个对象，但是在 web worker 中根本无法访问 document，所以我们需要给 worker 添加一个 document 对象。代码如下：
+
+```
+//@ts-ignore
+self.document = {}
+```
+
+1. 添加 //@ts-ignore 这样注释，可以让 TypeScript 忽略下面一行代码的检查。
+
+   > 因为 window.document 在 TS 版本里被定义为 只读对象，是无法修改的。
+   >
+   > 如果我们不选择忽略 TS 检查，当去执行 self.document = {} 时 TS 就会报错。
+
+2. 我们添加的 self.document = {} 纯粹是为了让 OrbitControls 构造函数可以去访问到 document 对象，避免报错。
+
+
+
+<br>
+
 **所谓的 “抛出事件” 实现的途径是由 我们虚构出的一个 事件派发器 来实现的。**
 
 **该事件派发器的 3 个功能责任：**
@@ -539,6 +654,8 @@ if ( state !== STATE.NONE ) {
 
 
 
+<br>
+
 **所谓的“模拟的DOM元素”，也就是在 web worker 中工作的 DOM 元素。**
 
 **该“模拟的DOM元素”的 2 个功能责任：**
@@ -548,17 +665,11 @@ if ( state !== STATE.NONE ) {
 
 **该“模拟的DOM元素”的生命工作流程为：**
 
-1. index.tsx 中创建该 “DOM元素”
+1. index.tsx 中添加对 真实 DOM 元素的监听，并且通知  worker 创建“模拟元素”的消息
 
-2. index.tsx 将该元素发送给 web worker
+2. worker.ts 中接收消息，开始创建一个 “模拟元素”，并且把该元素传递给 OrbitControls
 
-   > 请注意，这里所谓的发送，本质上其实是 web worker 接收到之后会重新克隆一份该 “模拟的DOM元素”
-
-3. worker.ts 中接收并克隆一份该 “DOM元素”，并且把他赋给 OrbitControls
-
-4. index.tsx 中创建 事件派发器，并开始监听真实 DOM 元素的各种事件
-
-5. index.tsx 中的 事件派发器 监听到真实 DOM 元素的各种事件后，将事件转化为消息并发送给 web worker。
+4. index.tsx 中监听到真实 DOM 元素触发的各种事件，将该事件分析处理，转化为一条约定好的消息 并发送给 worker
 
 6. worker.ts 中接收到事件消息后，将该消息转发给 “模拟的DOM元素”
 
@@ -570,6 +681,8 @@ if ( state !== STATE.NONE ) {
 
 
 
+<br>
+
 **整个事件的流程为：**
 
 **真实DOM事件 > 转化为消息 > 发送给 worker > 传递给“模拟的DOM元素” > 抛出该消息(相当于抛出该事件)**
@@ -580,35 +693,57 @@ if ( state !== STATE.NONE ) {
 
 
 
+<br>
+
 **关于 事件抛出 的补充说明：**
 
-有 2 个已经定义好，可供我们使用的类：
+我们让 “虚构元素” 继承于 Three 已内置的 EventDispatcher，这样 “虚构元素” 就 具备 .dispatcheEvent() 方法。
 
-1. 使用 Three.js 提供的 EventDispatcher
+```
+import { EventDispatcher } from 'three'
+```
 
-   ```
-   import { EventDispatcher } from 'three'
-   ```
-
-2. 使用 原生 JS 提供的 EventTarget 
+<br>
 
 
 
-我们这里使用 Three.js 提供的 EventDispatcher。
+为什么不使用 原生 JS 提供的 EventTarget ？
 
-> 原生 JS 中内置的 EventTarget 本质上也是一种内置的对象而已，和我们使用 Three.js 提供的 EventDispatcher 区别并不大。
+这是因为原生 JS 提供的 EventTarget 虽然也有 .dispatcheEvent()，但问题是它只可以抛出 JS 中的 Event 实例，而我们在 worker 中并不能使用 Event。
+
+<br>
 
 
+
+**补充说明：**
+
+无论 JS 原生的 EventTarget，还是 Three.js 内置的 EventDispatcher，他们内部本质上都是执行的是函数调用，所以他们的执行过程都是 同步的。
+
+> 浏览器中原生的各种事件处理函数 其实是异步的。
+
+
+
+<br>
 
 **整体解决思路回顾：为什么我们可以实现？**
 
 回顾一下本小节开头的困境问题：web worker 本身不可以访问真实 DOM 元素，当然也包括 DOM 事件。
+
+
+
+<br>
 
 **那么我们究竟是怎么做到的？以及为什么我们可以做到？**
 
 **答：机缘巧合**
 
 **第1种机缘巧合：**虽然 web worker 无法访问真实的 DOM 元素，但是 canvas 元素对应的 OffscreenCanvas 却是一个例外，通过主线程让出 canvas 绘制控制权，让 web worker 拥有了可以操作并绘制 canvas 元素的能力。
+
+> 目前火狐浏览器并不支持 OffscreenCanvas，所以本示例还要考虑在非 worker 情况下的场景创建。
+
+
+
+<br>
 
 **第2种机缘巧合：**虽然 web worker 无法直接监听真实 DOM 元素事件，但是 web worker 内部却可以运行 抛出事件 这个操作。于是我们通过 事件 > 消息 > 消息 > 事件 的操作让 web worker 内部模拟出的 DOM 元素拥有了像真实 DOM 元素一样的各种事件抛出机制。
 
@@ -617,6 +752,8 @@ if ( state !== STATE.NONE ) {
 最终我们让 web worker 中 OrbitControls 正常运行起来了。
 
 
+
+<br>
 
 > 如果你对我上面的讲述还不太理解，那么多读几遍，不要着急接着往下看。因为如果整体的思路你没有理解透，那么下面这些具体实现的代码，阅读起来也会一头雾水。
 
@@ -643,426 +780,160 @@ https://developer.mozilla.org/zh-CN/docs/Web/API/MutationObserver
 
 
 
+### 整体思路示意图
+
+![using-orbitcontrols-in-worker.jpg](https://puxiao.com/demo/using-orbitcontrols-in-worker/using-orbitcontrols-in-worker.jpg)
+
+
+
+<br>
+
 接下来开始讲解具体代码如何实现。
 
-> 由于我使用的是 React + TypeScript，加上我有一些自己代码理解和划分，所以我下面讲述的代码和原教程略微不同。
+> 由于我使用的是 React + TypeScript，加上我有一些自己代码理解和划分，所以我下面讲述的代码和原教程很多地方都不一样。
 
 > 过程有点复杂，希望我能讲清楚。
 
 
 
+<br>
+
 #### 代码模块规划
 
-1. 定义一个类 ElementProxyReceiver 继承于 EventDispatcher，用这个类的实例来模拟 “DOM元素本身”
+1. 定义一个类 FictionalElement 继承于 EventDispatcher，用这个类的实例来模拟 “DOM元素本身”
 
-   > 请注意：ElementProxyReceiver 只具备(模仿、模拟) “DOM元素” 本身的一些属性和方法(例如 width、height、left、top、getBoundingClientRect() 等)，但并不具备可以直接和 web worker 通信的能力
+   > 请注意：FictionalElement 只具备(模仿、模拟) “DOM元素” 本身的一些属性和方法(例如 width、height、left、top、getBoundingClientRect() 等)，但并不具备可以直接和 web worker 通信的能力
 
    > 在模拟一些 “无用” 的方法时，例如 focus()、preventDefault()、stopPropagation()，将该方法代码体内不添加任何代码，只是保证有这个方法但无需有实际执行内容。
 
-2. 定义一个类 ProxyManager 用来创建和管理所有 ElementProxyReceiver 实例
+2. 定义一个类 FictionalElementManager 用来创建和管理所有 FictionalElement 实例
 
    > 事实上我认为这一步骤不是必须的，因为实际项目中，绝大多数情况下网页中都只会有一个 用户交互元素(通常为 canvas 或 document.body)，并不会有太多元素需要我们管理。但是本文对应的 [原版教程](https://threejsfundamentals.org/threejs/lessons/threejs-offscreencanvas.html) 中有这一环节(管理层)，那么我们也继续遵循。
 
    > 为了区别不同的管理对象，我们将在内部给每一个 ElementProxyReceiver 添加一个对应的 id
-
-3. 定义一个类 ElementProxy 用来负责 真实DOM元素与 Web Worker 之间通信。
-
-   > 当浏览器窗口尺寸发生变化时，我们模拟的 "DOM元素本身"也应该会发生尺寸变化，而这个变化的触发并不是由 ElementRroxyReceiver 完成的，而是由 ElementProxy 来完成的。 
-
-4. 定义一些 通信数据结构类型，方便我们在 TypeScript 中使用(类型约束和自动检查)
-
-   > 例如 DOMEvent、MainMessage、EventMessage
-
-   以上的所作所为 都是为了让我们在 index.tsx 和 worker.ts 中使用。
-
-5. index.tsx 中需要处理的事情有：
-
-   1. 初始化 “虚拟DOM”，也就是 ElementProxy 实例
-   2. 真实DOM元素的各种事件进行添加，并在事件处理函数中将变化传递出去
-   3. 初始化 web worker
-
-6. worker.ts 中需要处理的事情有：
-
-   1. 初始化场景、初始化 OrbitControls
-   2. OrbitControls 监听 “虚拟DOM” 发送过来的各种事件
-   3. 监听 网页 resize 事件
-
-> 以上每个步骤具体实现时还都挺复杂的，多点耐心继续往下看吧。
-
-
-
-### 模拟DOM事件实例结构类型：DOMEvent
-
-使用 typescript 先定义我们需要模拟的 DOM 事件类型结构。
-
-DOMEvent 的主要内容有：
-
-1. type：交互事件类型名称，有 resize、contextmenu、mousedown、mousemove、mouseup、touchstart、touchmove、wheel、keydown
-2. preventDefault()、stopPropagation()：阻止事件冒泡的函数
-3. `[key: string]: any`：这里虚拟定义了一些属性值，例如鼠标事件对应的一些属性值 clientX/clientY/pageX....，或 触摸事件对应的 pageX/pageY 等。
-
-**具体代码：**
-
-```
-export interface DOMEvent {
-    type: string
-    preventDefault(): void
-    stopPropagation(): void
-    [key: string]: any
-}
-```
-
-> 我们假定需要模拟出的 DOM 事件，即包含 resize 事件，又包含用户各种交互事件。
-
-> 像真实 DOM 事件实例 event 还有很多其他属性，例如 event.target 等，这些我们就都不模拟了，因为 OrbitControls 根本用不到。
-
-
-
-### 负责主线程与worker通信的数据类型：WorkerMessage
-
-WorkerMessage 是由 3 种消息类型组成的：
-
-1. 主场景通知 worker 初始化的消息：MainMessage
-
-2. 主场景通知 worker 被监控的 DOM 元素尺寸发生变化的消息：ResizeMessage
-
-   > 请注意，ResizeMessage 携带的 DOM 元素尺寸等属性值，不光 OrbitControls 需要使用，Three.js 3D 场景中的 镜头和渲染器也需要使用到。
-
-3. 主场景通知 worker 被监控的 DOM 元素用户各种交互事件的消息：EventMessage
-
-每一种消息实体都拥有 type 属性 和 消息本身需要的特有属性。
-
-
-
-**具体代码：**
-
-```
-import { DOMEvent } from "./dom-event"
-
-export enum MessageType {
-    main = 'main',
-    event = 'event',
-    resize = 'resize'
-}
-
-export class MainMessage {
-    type: MessageType.main
-    canvas: OffscreenCanvas
-    canvasId: string
-    element: HTMLElement
-    constructor(canvas: OffscreenCanvas, canvasId: string, element: HTMLElement) {
-        this.type = MessageType.main
-        this.canvas = canvas
-        this.canvasId = canvasId
-        this.element = element
-    }
-}
-
-export class ResizeMessage {
-    type: MessageType.resize
-    top: number
-    left: number
-    width: number
-    height: number
-    constructor(top: number, left: number, width: number, height: number) {
-        this.type = MessageType.resize
-        this.top = top
-        this.left = left
-        this.width = width
-        this.height = height
-    }
-}
-
-export class EventMessage {
-    type: MessageType.event
-    id: number
-    event: DOMEvent
-    constructor(id: number, event: DOMEvent) {
-        this.type = MessageType.event
-        this.id = id
-        this.event = event
-    }
-}
-
-export type WorkerMessage = MainMessage | EventMessage | ResizeMessage
-```
-
-> **补充一下相关的 TypeScript 知识：**
->
-> 像 WorkerMessage 这种形式，在 TypeScript 中被称为 “可辨识类型”，总类(父类) 其实是由 子类 联合起来后定义(推理)得出的。
->
-> 在传统的面对对象编程语言中，一定是先定义父类，再定义子类。但是在 TS 中却可以先定义 “子类”，然后 若干种 “子类” 联合起来可以组成了 “父类”。
->
-> TypeScript会将各个 “子类” 中相同的元素进行提取分析，然后将这些相同的属性归类到“父类”中。
->
-> 在上面的代码中 MainMessage、EventMessage、ResizeMessage 这 3 个类本身都是相互独立的，但是由于他们都有 type 这个属性，且该属性类型不同，那么在其他地方使用 WorkerMessage 时 TS 可以根据 type 的值来推理出究竟该消息实例是哪一种消息，进而得到 TS 相关代码提示和检查。
-
-
-
-### 模拟DOM元素：ElementProxyReceiver
-
-ElementProxyReceiver 的主要内容有：
-
-1. 模拟真实 DOM 元素的属性：width、height、left、right、top、bottom
-
-2. 模拟真实 DOM 元素的方法：get clientWidht()、get clientHeight()、getBoundingClientReact()、focus()
-
-   > 由于 OrbitControls 中使用到了 focus()，所以我们才需要模拟出 focus()，OrbitControls 中并未使用到 blur()，所以我们无需模拟该方法
-
-   > 注意：我们在模拟  focus() 函数时，仅仅声明该函数即可，不需要具体执行任何代码 
-   
-   > 假设有一天我们需要 bulr() 或者其他函数或事件，例如 click 事件，到时候再继续扩展 ElementProxyReceiver
-   
-3. 模拟用户交互事件对象本身的 2 个方法：preventDefault、stopPropagation
-
-   > 这 2 个方法原本是 OrbitControls 用来阻止 DOM 元素事件继续冒泡的，我们模拟 2 个方法时也无需做任何处理，因为在 web worker 中实际上根本不存在真实的 DOM 元素，阻止不阻止没有任何意义。
-
-   > 这一点和 focus() 函数一样，尽管实际上不根本需要、调用之后也不起作用，但是我们还要定义他们，以便 OrbitControls 调用时不报错。因为 OrbitControls 并不知道原来他一直在操作一个假的DOM元素、监听假的 DOM 事件。
-
-4. 添加供 web worker 调用的函数：handleEvent()
-
-   > handleEvent() 函数需要处理 2 种事件，以及他们的处理方式：
    >
-   > 1. DOM 元素尺寸发生变化的事件(resize)：需要内部处理，但无需再次抛出该事件，因为 OrbitControls 无需处理 resize 事件
-   > 2. DOM 元素用户交互事件(鼠标事件、键盘事件... )：不需要内部处理，但需要抛出该事件，因为 OrbitControls 需要处理这些事件
+   > 原版教程中，id 是由 FictionalElementManager 提供的，但是我认为这样并不合理，我采用的是通过外部传递 id 为 string 类型的值。
 
-**具体代码：**
+3. 定义一个类 FictionalWindow 用来模拟 window
 
-```
-import { EventDispatcher } from 'three'
-import { WorkerMessage, MessageType } from './worker-message'
+   > 请注意，目前来说 FictionalWindow 仅仅是继承了 EventDispatcher，并没有做其他设置，先这样做，也许未来有其他需求了，再根据需要扩展它。
 
-const noOperate = () => {
-    //no operate
-}
+4. 定义一个类 ControlsProxy 用来负责基础的 真实DOM元素与 Web Worker 之间通信。
 
-class ElementProxyReceiver extends EventDispatcher {
+   > 当浏览器窗口尺寸发生变化时，我们模拟的 "DOM元素本身"也应该会发生尺寸变化，而这个变化的触发并不是由 FictionalElement 完成的，而是由 ControlsProxy 来完成的。 
 
-    width: number
-    height: number
-    left: number
-    right: number
-    top: number
-    bottom: number
+5. 定义一个类 OrbitControlsProxy 继承于 ControlsProxy，然后重写 configEventListener() 和 dispose()
 
-    constructor() {
-        super()
+   > 你可能疑惑为什么我没有直接把代码写在同一个类里，而是要拆分成 2 个。我这样做的原因是想将一些基础的、共性的属性和方法抽离出来，这样未来有一天我们要去实现其他轨道控制器，都可以继承于 ControlsProxy
 
-        this.width = 0
-        this.height = 0
-        this.left = 0
-        this.right = 0
-        this.top = 0
-        this.bottom = 0
-    }
+6. 定义一个类 WorkerMessageType，用来定义 发送消息 的类型
 
-    get clientWidth() {
-        return this.width
-    }
+   > 每次都靠手写消息类型是不靠谱的，万一手抖拼写错字母了想检查出来都不容易。
 
-    get clientHeight() {
-        return this.height
-    }
+7. 此外，虽然本教程一直都是用的是 TypeScript，但是在编写这些类的时候，考虑有些人并不使用 TS，所以我采用的是 .js + JSDoc 的方式，通过 JSDoc 代码注释的形式来定义不同消息的数据结构，没有使用 .ts。
 
-    getBoundingClientRect() {
-        return {
-            left: this.left,
-            top: this.top,
-            width: this.width,
-            height: this.height,
-            right: this.left + this.width,
-            bottom: this.top + this.height,
-        };
-    }
-
-    focus() {
-        //no operate
-    }
-
-    handleEvent(message: WorkerMessage) {
-        switch (message.type) {
-            case MessageType.resize:
-                this.left = message.left
-                this.top = message.top
-                this.width = message.width
-                this.height = message.height
-                break;
-            case MessageType.event:
-                message.event.preventDefault = noOperate
-                message.event.stopPropagation = noOperate
-                this.dispatchEvent(message.event)
-                break
-            default:
-                throw new Error(`ElementProxyReceiver: Can't find ${message.type} handler.`)
-                break
-        }
-    }
-}
-
-export default ElementProxyReceiver
-```
+   > 我也是因为这个示例而去学习了 JSDoc，感兴趣可查看我另外一篇学习笔记：[JSDoc的安装与使用.md](https://github.com/puxiao/notes/blob/master/JSDoc%E7%9A%84%E5%AE%89%E8%A3%85%E4%B8%8E%E4%BD%BF%E7%94%A8.md)
 
 
 
-### 管理模拟DOM元素的类：ProxyManager
+<br>
 
-ProxyManager 用来管理 模拟的DOM元素，具体的属性和方法有：
+以上仅仅是 “虚构” 的核心代码，除此之外，我们还需要编写对应的 “应用” 层面的代码：
 
-1. targets：内部用来存放所有 模拟的 DOM 元素集合
+1. index.tsx：JS 主场景 main 代码
 
-   > 我们使用 Object 来作为储存集合的类型，事实上也可以使用 Map 这种类型。
+2. worker.ts：Worker 场景代码
 
-2. makeProxy()：负责创建 模拟的 DOM 元素。
+3. create-world.ts：负责创建 Three.js 3D 场景的核心代码
 
-3. getProxy()：负责获取 模拟的 DOM 元素
+   > create-world.ts 中的代码并不知道自己将来是运行在 Worker 中还是运行在 主场景中(Main)
 
-4. deleteProxy()：负责删除 模拟的 DOM 元素
 
-5. handleProxyMessage()：负责接收事件调度命令，并将该调度命令转发给指定的 模拟的 DOM 元素
 
-   > 在原版教程中，使用的是 handleEvent()，但是我认为原版教程中的 handleEvent() 名称很容易让人误解为这是一个事件处理函数，事实上并不是事件，而是普通的调用函数。
+<br>
+
+**如果你能坚持看到这里没有被我绕晕，那恭喜你。**
+
+是不是该展示具体代码了？
+
+<br>
+
+### 项目实际代码
+
+原理都讲述完了，但是每个类的代码细节实在是太多，我也不想再细致讲述了，所以在 Github 单独创建了一个项目：
+
+**https://github.com/puxiao/using-orbitcontrols-in-worker**
+
+
+
+<br>
+
+> 为了让全世界的人能看到我的这个代码，我竟然写了一个英文版 README.MD
+
+你可以直接查看我写的简体中文介绍文档：
+
+https://github.com/puxiao/using-orbitcontrols-in-worker/blob/main/README-zh_CN.md
+
+
+
+<br>
+
+
+
+### 说一下我的感受
+
+本节后面的代码实现，花费了我有 1 个月的时间，整个过程即充实有痛苦。
+
+1. 从阅读原版教程，完全看不懂 理解不了
+2. 后来可以理解
+3. 改为自己的实现方式
+4. 不断得修改、优化代码
+5. 上传到 Github 编写文档
+
+尽管掌握了本章所写的示例代码，但是这些对实际 Three.js 的使用提升并不会有立竿见影的效果。
+
+
+
+<br>
+
+#### 但是！
+
+因为不断的深入去理解，学习，我也有很多收获：
+
+1. 我成功向 Three.js 贡献了自己的一点点代码，尤其是在提交自己的 PR 过程中，用蹩脚英语与 Three.js 代码审查人员的不断沟通，是一次很神奇的体验。
+
+2. 通过 OrbitControls，顺带我也看了其他 轨道控制器的 一些源码，事实上我原本的野心计划是编写出所有轨道控制器的 ControlsProxy 版，但是时间和精力，这个事情只能暂时放下，等待将来或者其他感兴趣的人来编写吧。
+
+   > 目前我的项目中只编写了 OrbitControlsProxy.js，如果你感兴趣，也可以尝试编写出其他 轨道控制器对应的 XxxControlsProxy。
    >
-   > 同时为了避免容易和 ElementProxyReceiver 的 handEvent() 混淆，所以我才使用 handleProxyMessage() 的。
+   > 提醒：如果你想编写其他轨道控制器的代理管理类，它需要继承于 ControlsProxy，然后重写 configEventListener() 和 dispose() 这 2 个方法。
+
+3. 学习了 JSDoc 注释规范，也就是即使我们不使用 TypeScript，通过 JSDoc 注释依然可以进行类型定义。
+
+   > 通过 JSDoc 的学习，让我对 TypeScript 有更加深一层的理解。
+   >
+   > 无论 TypeScript 还是 JSDoc，还是 VSCode IDE 本身的代码提示和自动检查，本质上都仅仅在 开发阶段 对我们编写的代码进行约束，将来 JS 运行阶段就管不了那么多了。
+
+4. 接触了 //@ts-ignore 这个特殊注释
 
 
 
-**具体代码形式 1：**
+<br>
 
-先看一下，假设 targets 为 Object 类型时对应的代码。
+### 本小节结束
 
-```
-import ElementProxyReceiver from "./element-proxy-receiver"
-import { WorkerMessage } from "./worker-message"
+本小节至此结束，同时也意味着本系列教程的 “优化” 篇章讲解完成。
 
-export interface ProxyMessageData {
-    id: number,
-    message: WorkerMessage
-}
-
-class ProxyManager {
-
-    targets: { [key: number]: ElementProxyReceiver }
-
-    constructor() {
-        this.targets = {}
-        this.handleProxyMessage = this.handleProxyMessage.bind(this)
-    }
-
-    makeProxy(id: number) {
-        const proxy = new ElementProxyReceiver()
-        this.targets[id] = proxy
-    }
-
-    getProxy(id: number) {
-        return this.targets[id]
-    }
-
-    deleteProxy(id: number) {
-        delete this.targets[id]
-    }
-
-    handleProxyMessage(data: ProxyMessageData) {
-        this.targets[data.id].handleEvent(data.message)
-    }
-}
-
-export default ProxyManager
-```
-
-> 上面中的 id 我们选择 number，而非 string 的原因是：我们在后面需要定义的 ElementProxy 中，可以不断 将数字 id++ 从而获得新的 id 值。
+接下来，我们要开始新的阶段学习，下一阶段才决定我们 Three.js 实际应用领域 “质的飞越”。
 
 
 
-**具体代码形式 2：**
+<br>
 
-如果 targets 我们不使用 Object 类型，而是使用 Map 类型，那么就可以利用 Map 的特性额外延展出其他非常多的方法，例如 hasProxy() 等，虽然这些方法对我们本示例来说并没有用到，但是还是使用 Map 定义一次。
+**下一阶段，我们要开始学习 Three.js 中常见的各种应用场景解决方案。**
 
-如果使用 Map 类型，那么代码如下：
-
-```
-import ElementProxyReceiver from "./element-proxy-receiver"
-import { WorkerMessage } from "./worker-message"
-
-export interface ProxyMessageData {
-    id: number,
-    message: WorkerMessage
-}
-
-class ProxyManager {
-
-    targets: Map<number, ElementProxyReceiver>
-
-    constructor() {
-        this.targets = new Map()
-        this.handleProxyMessage = this.handleProxyMessage.bind(this)
-    }
-
-    makeProxy(id: number) {
-        return this.targets.set(id, new ElementProxyReceiver())
-    }
-
-    getProxy(id: number) {
-        return this.targets.get(id)
-    }
-
-    deleteProxy(id: number) {
-        return this.targets.delete(id)
-    }
-
-    handleProxyMessage({ id, message }: ProxyMessageData) {
-        const element = this.targets.get(id)
-        if (element) {
-            element.handleEvent(message)
-        } else {
-            throw new Error(`ProxyManager: Can't find target by id ${id}`)
-        }
-    }
-}
-
-export default ProxyManager
-```
-
-> 我们通过 `targets: Map<number, ElementProxyReceiver>` 这种形式 可以约束 targets 的结构类型。
-
-> 你可能注意到，在上面代码中 setProxy()、deleteProxy() 分别新增了 return ，这样其实是利用了 Map 类型的一些操作特性，让我们的函数不光可以执行，而且还可以返回执行结果。
-
-> 同时，我们也将 handleProxyMessage(data: ProxyMessageData) 参数 data 进行了解构。
+加油，好玩有趣的事情终于要开始了。
 
 
 
-虽然看上去使用 Map 要比 Object 的代码量更多，但是 Map 这种写法会让我们的代码更加严谨。
-
-> 当然事实情况是我们的 ProxyManager 操作并不会频繁，使用哪种方式差别不大，所以以上 2 种定义 ProxyManger 的代码都是可以的。
-
-
-
-**补充说明：**
-
-在我看来，如果项目本身并不复杂，且网页需要管理的用户交互操作只有一个 DOM 元素，那么我们是完全没有必要使用 ProxyManager 的。
-
-但是原版教程中既然这样做了，那我也对应的实现一下 ProxyManager。
-
-
-
-**关于 ProxyManager 作用的再次补充说明 ：**
-
-事实上你可以将 ProxyManager 简单粗暴的理解成 document，也就是说：
-
-1. ProxyManager.makeProxy() 理解成 document.createElement()
-2. ProxyManage.getProxy() 理解成 document.getElementById()
-
-
-
-至此，我们目前已经实现的有：
-
-1. 模拟 DOM 元素的 ElementProxyReceiver
-2. 模拟 DOM 事件的 DOMEvent
-3. 模拟 document 的 ProxyManager
-4. 定义 主线程与 web worker 发送消息格式的 WorkerMessage
-
-接下来就需要来实现负责 主线程与 web worker 之间搭建沟通桥梁的 ElementProxy。
-
-
-
-### 负责主线程与WebWorker通信的类：ElementProxy
-
+<br>

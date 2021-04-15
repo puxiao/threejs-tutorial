@@ -1,16 +1,65 @@
 # 16 Three.js基础之自定义几何体
 
-以下内容更新于2021年2月12日
-
-今天更新了 Three.js ，将版本升级为最新的 0.125.2，发现官方已经将 Geometry 从核心库中移除，改为：
-
-import { Geometry } from 'three/examples/jsm/deprecated/Geometry'
-
-还有 Three.Mesh() 函数中的参数也发生了变化，因此本文中的代码在最新的版本中，是无法运行的。
-
-你可以先跳过本章，继续后面的学习。
 
 
+**重要说明：本文部分内容已经过时**
+
+> .以下内容更新于2021年4月15日
+
+
+
+本文写的时候还使用的是 0.124.0版本，但是在 0.125.2 以后（目前最新的是 0.127.0 ），关于 几何体 官方做了重大调整：
+
+1. 官方已经将 Geometry 从核心库中移除，新的位置改为：
+
+   ```
+   import { Geometry } from 'three/examples/jsm/deprecated/Geometry'
+   ```
+
+   请注意 目录名为 deprecated，这个单词的意思就是：已弃用、不建议使用。
+
+   也就是说官方已经不再建议你使用 Geometry 这个类了，那它的替代者是谁呢？
+
+2. 在 r124 版本的时候，几何体(例如 BoxGeometry) 他们都继承的是 Geometry，但是在新版本中它们继承的是 BufferGeometry。
+
+   也就是说如果你想自定义几何体，现在应该使用的是 BufferGeometry
+
+   > Three.BufferGeometry
+
+   > 换句话说，就是 BufferGeometry 替代了 Geometry
+
+3. Three.Mesh() 函数中的参数也发生了变化
+4. 或许还有其他更多地方发生了变化...
+
+
+
+<br>
+
+本文在编写的时候，还采用的是 Geometry，所以本文内容过时了。
+
+目前先暂且不做修改，等到以后有时间了再将本文中的代码 Geometry 修改为 BufferGeometry。
+
+
+
+<br>
+
+你可以先跳过本章，继续后面章节的学习。
+
+> 以下内容更新于2021年4月15日
+
+
+
+<br>
+
+接下来开始本文(已过时)的内容。
+
+____
+
+
+
+
+
+<br>
 
 本文说的 几何体(geometry)，也就是之前 “05 Three.js基础之图元.md” 中的 图元(primitives)。
 

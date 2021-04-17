@@ -297,7 +297,7 @@ const canvasStyle = {
 
 ## 天空盒(Skybox)
 
-假设我们身处一个盒子内部，我们可以观察到盒子内部 6 个面的背景贴图。
+假设我们身处一个立方体内部，我们可以观察到立方体内部 6 个面的背景贴图。
 
 > 这不就是我们身处某个房间内吗？
 
@@ -309,17 +309,26 @@ const canvasStyle = {
 
 <br>
 
-#### 第1种实现天空盒的方法
+**天空盒一共有 2 种形式的贴图资源：**
+
+1. 全景图(hdri)，又名 天空图
+2. 立方体贴图(cubemap)
+
+
+
+<br>
+
+#### 第1种实现天空盒的方法：全景图(hdri)
 
 很明显，我们最容易想到的实现方式为：
 
-1. 我们把整个 Three.Screen 当做立方体，也就是将整个场景当做盒子
+1. 我们把整个 Three.Screen 当做立方体，也就是将整个场景当做立方体
 
-   > 再次重复一遍：我们并不是在场景中创建一个立方体，而是直接将整个场景当做盒子
+   > 再次重复一遍：我们并不是在场景中创建一个立方体，而是直接将整个场景当做立方体
    >
-   > 假设你要给场景中某个盒子设置类似的效果，那么你要做的事情是：
+   > 假设你要给场景中某个立方体设置类似的效果，那么你要做的事情是：
    >
-   > 1. 创建纹理，使用盒子纹理加载器(Three.CubeTextureLoader)加载图片资源
+   > 1. 创建纹理，使用立方体纹理加载器(Three.CubeTextureLoader)加载图片资源
    >
    > 2. 创建材质，除了设置材质的纹理之外，还要设置 .side 属性，将值为 Three.BackSide，例如
    >
@@ -327,13 +336,13 @@ const canvasStyle = {
    >    new MeshPhongMaterial({ map:xxxx, side: Three.BackSide })
    >    ```
    >
-   > 3. 最终创建盒子网格(Three.Mesh)
+   > 3. 最终创建立方体网格(Three.Mesh)
 
-   > 请注意：绝大多数 VR 看房，都是将场景当做盒子即可。
+   > 请注意：绝大多数 VR 看房，都是将场景当做立方体即可。
 
 2. 按照指定顺序，获取(加载) 6 个面的纹理贴图，得到纹理
 
-   > 请注意，这次加载我们并不使用 Three.TextureLoader，而是采用盒子专有的纹理加载器 Three.CubeTextureLoader
+   > 请注意，这次加载我们并不使用 Three.TextureLoader，而是采用立方体专有的纹理加载器 Three.CubeTextureLoader
 
 3. 将得到的纹理作为场景背景
 
@@ -388,7 +397,7 @@ cubeTextureLoader.load([
 
 **针对贴图资源顺序的补充说明：**
 
-在上面示例代码中，我们可以看到加载盒子 6 面图片贴图资源的顺序是固定的，依次为：
+在上面示例代码中，我们可以看到加载立方体 6 面图片贴图资源的顺序是固定的，依次为：
 
 pos-x.jpg、neg-x.jpg、pos-y.jpg、neg-y.jpg、pos-z.jpg、neg-z.jpg
 
@@ -426,24 +435,24 @@ pos-x.jpg、neg-x.jpg、pos-y.jpg、neg-y.jpg、pos-z.jpg、neg-z.jpg
 
 <br>
 
-**对于盒子贴图，使用的是左手系统！**
+**对于立方体贴图，使用的是左手系统！**
 
 因此上面图片名称的含义为：
 
-| 名称  | 含义       | 对应盒子内部的面来说 | 对于站在盒子内部中间的人来说 |
-| ----- | ---------- | -------------------- | ---------------------------- |
-| pos-x | X 轴正方向 | 左面                 | 视觉左方                     |
-| neg-x | X 轴负方向 | 右面                 | 视觉右方                     |
-| pos-y | Y 轴正方向 | 上面                 | 视觉上方                     |
-| neg-y | Y 轴负方向 | 下面                 | 视觉下方                     |
-| pos-z | Z 轴正方向 | 后面                 | 视觉后方                     |
-| neg-z | Z 轴负方向 | 前面                 | 视觉前方                     |
+| 名称  | 含义       | 对应立方体内部的面来说 | 对于站在立方体内部中间的人来说 |
+| ----- | ---------- | ---------------------- | ------------------------------ |
+| pos-x | X 轴正方向 | 左面                   | 视觉左方                       |
+| neg-x | X 轴负方向 | 右面                   | 视觉右方                       |
+| pos-y | Y 轴正方向 | 上面                   | 视觉上方                       |
+| neg-y | Y 轴负方向 | 下面                   | 视觉下方                       |
+| pos-z | Z 轴正方向 | 后面                   | 视觉后方                       |
+| neg-z | Z 轴负方向 | 前面                   | 视觉前方                       |
 
-> 请注意，盒子的前面或后面完全是由观察者所处的位置来决定的。
+> 请注意，立方体的前面或后面完全是由观察者所处的位置来决定的。
 >
-> 如果你在盒子外面去看盒子，那么正面看到的是盒子的正面，看不到的是盒子的背面。
+> 如果你在立方体外面去看立方体，那么正面看到的是立方体的正面，看不到的是立方体的背面。
 >
-> 但是我们现在做的是站在盒子内部去观察盒子，所以此刻 “盒子的正面” 实际上对于我们观察者而言是在我们身后，也就是我们的视觉后方。
+> 但是我们现在做的是站在立方体内部去观察立方体，所以此刻 “立方体的正面” 实际上对于我们观察者而言是在我们身后，也就是我们的视觉后方。
 
 
 
@@ -455,9 +464,9 @@ pos-x.jpg、neg-x.jpg、pos-y.jpg、neg-y.jpg、pos-z.jpg、neg-z.jpg
 
 > 重复一遍：
 >
-> 1. 一般盒子模型贴图使用左手坐标系统
+> 1. 一般立方体模型贴图使用左手坐标系统
 > 2. Three.js 整体使用右手坐标系统
-> 3. 但在渲染盒子内部贴图时，Three.js 会自动帮我们做好左右兑换
+> 3. 但在渲染立方体内部贴图时，Three.js 会自动帮我们做好左右兑换
 > 4. 因此我们在传递纹理贴图时，贴图顺序使用的是左手坐标系统
 
 
@@ -470,12 +479,106 @@ pos-x.jpg、neg-x.jpg、pos-y.jpg、neg-y.jpg、pos-z.jpg、neg-z.jpg
 
 <br>
 
-#### 第2种实现天空盒的方法
+#### 第2种实现天空盒的方法：立方体贴图(cubemap)
 
 我们第1种实现天空盒，实际上使用的是 6 个面的图片资源组合成了一个 3D 空间。
 
-接下来我们学习使用一张 360° 球形相机拍摄的照片，来实现 3D 空间盒子。
+接下来我们学习使用一张 360° 球形相机拍摄的照片，来实现 3D 空间立方体。
 
 
 
 <br>
+
+首先你从网上找到一张 360° 的场景图片资源：
+
+https://threejsfundamentals.org/threejs/resources/images/equirectangularmaps/tears_of_steel_bridge_2k.jpg
+
+> 请注意，这类图片尺寸宽高比例为 2:1，经常称呼这类图片为 “全景图”
+
+
+
+<br>
+
+**实现思路：**
+
+1. 使用纹理加载器加载该图片资源
+
+   > 这种 2:1 的图片，被称为 “等矩形图像”
+
+2. 实例化一个 Three.WebGLCubeRenderTarget，构造函数中的 size 属性为图片资源的高
+
+   > WebGLCubeRenderTarget 继承于 WebGLRenderTarget，属于离屏渲染的一种特例(专门针对立方体模型)
+
+   > 在 WebGLRenderTarget 的源码中可以看到这句代码：super( size, size, options );
+   >
+   > WebGLRenderTarget 构造函数需要传递 width 和 height，但是 WebGLCubeRenderTarget 构造函数只需传入 1 个 size，因为正方体，所以宽高一样。
+
+3. 调用该实例化对象的 fromEquirectangularTexture() 函数
+
+   > 将等距图像 转化为 立方体模型贴图
+   >
+   > > 可以简单理解成：就是将 1 整张图片转化为 6个面的立方体模型贴图，并进行渲染
+
+4. 将场景背景设置为该实例对象
+
+   > 这样相当于将场景背景图的值设置为 WebGLCubeRenderTarget  的渲染结果
+
+
+
+<br>
+
+**具体代码：**
+
+```
+const textureLoader = new Three.TextureLoader()
+textureLoader.load(require('@/assets/imgs/tears_of_steel_bridge.jpg').default,
+    (texture) => {
+        const crt = new Three.WebGLCubeRenderTarget(texture.image.height)
+        crt.fromEquirectangularTexture(renderer,texture)
+        scene.background = crt.texture
+    }
+)
+```
+
+> 补充说明：scene.background 的类型为 WebGLBackground
+>
+> 请留意上述代码中 `scene.background = crt.texture`，事实上在以前的一些教程中可以写成 `scene.background = crt`，WebGLBackground 会在内部进行判断，如果 background 类型为 WebGLRenderTarget，则使用该实例的 .texture 属性值。
+>
+> 但是在最新版 r127 中已经删除了该判断代码，所以现在必须写成 `scene.background = crt.texture`。
+>
+> 就这个问题，我已向官网教程进行了修改提交：https://github.com/gfxfundamentals/threejsfundamentals/pull/205
+
+
+
+<br>
+
+### 补充说明：全景图(hdri) 与 立方体贴图(cubemap) 互转
+
+网上有人提供了 全景图与立方体模型图 之间的转化工具包：
+
+在线地址：https://matheowis.github.io/HDRI-to-CubeMap/
+
+项目源码：https://github.com/aunyks/hdri-to-cubemap
+
+
+
+<br>
+
+你以为本文结束了？没有！
+
+我们上面示例讲的都是加载纹理，然后通过设置 场景背景(scene.background) 来实现的，除了这种方式，还有没有别的途径来实现？
+
+
+
+<br>
+
+接下来我们就要讲解第 3 种方式：创建球体，然后让我们身处球体之内。
+
+> 为什么是球体，而不是 立方体？
+
+
+
+<br>
+
+## 场景背景的第3种添加方式
+

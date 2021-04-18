@@ -527,9 +527,13 @@ https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco
 
 Three.js 源码包中 draco 针对 gltf 文件的解压文件库：
 
-https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco/gltf
+1. draco/ 目录下有 4 个文件：draco_decoder.js、draco_decoder.wasm、draco_encoder.js、draco_wasm_wrapper.js
 
-在该目录下，一共有 4 个文件：
+2. draco/gltf/ 目录下面同样有 4 个文件
+
+   > 请注意 draco/ 和 draco/gltf/ 目录下的 4 个文件虽然是名字一样，但是他们内容并不相同。
+
+分别解释一下这 4 个文件：
 
 1. draco_decoder.js
 
@@ -549,21 +553,19 @@ https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco/gltf
 
    > 用于封装 .wasm 解码器的 js
 
-对于我们使用 Three.js 而言，以上 4 个文件中除 draco_encoder.js 以外，其他 3 个文件都是我们需要的。
-
 
 
 重点来了...
 
 <br>
 
-#### 第1步：拷贝 draco/gltf 文件到项目 public 中
+#### 第1步：拷贝 draco 文件到项目 public 中
 
-我们将 Three.js 中 examples/js/libs/draco/gltf 目录拷贝到 React 项目的 public 目录中。
+我们将 Three.js 中 examples/js/libs/draco 目录拷贝到 React 项目的 public 目录中。
 
-> draco gltf 属于第 3 方库，我们目前暂时采用拷贝到 public 目录中这种形式
-
-> 在 Three.js 官方示例中使用的是 `examples/js/libs/draco/`，这是因为在 draco/ 和 draco/gltf 目录下，都有上面 4 个文件，所以使用哪个目录都可以。
+> draco 属于第 3 方库，我们目前暂时采用拷贝到 public 目录中这种形式
+>
+> 请记得一定拷贝的是 draco/，其中包含 draco/gltf/ 目录
 
 
 
@@ -583,7 +585,7 @@ https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco/gltf
 	const gltfLoader = new GLTFLoader()
 
 +	const dracoLoader = new DRACOLoader()
-+	dracoLoader.setDecoderPath('./examples/js/libs/draco/gltf')
++	dracoLoader.setDecoderPath('./examples/js/libs/draco/')
 +	dracoLoader.setDecoderConfig({ type: 'js' })
 +	gltfLoader.setDRACOLoader(dracoLoader)
 
@@ -602,7 +604,7 @@ https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco/gltf
 
    实例化一个 DRACOLoader
 
-2. `dracoLoader.setDecoderPath('./examples/js/libs/draco/gltf')`
+2. `dracoLoader.setDecoderPath('./examples/js/libs/draco/')`
 
    设置 dracoLoader 应该去哪个目录里查找 解压(解码) 文件
 
@@ -642,7 +644,7 @@ DRACOLoader使用示例代码如下：
 
 ```
 const loader = new DRACOLoader();
-loader.setDecoderPath( '/examples/js/libs/draco/gltf' );
+loader.setDecoderPath( '/examples/js/libs/draco/' );
 loader.preload();
 
 loader.load('./xxx/model.drc',

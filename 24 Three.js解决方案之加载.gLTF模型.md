@@ -447,4 +447,217 @@ https://modelviewer.dev/shared-assets/models/Astronaut.glb
 
 <br>
 
+你以为本文结束了？没有！
+
+在上面示例中，我们实际上漏掉了一个非常重要的知识点：加载被压缩过的 .glb 文件
+
+
+
+<br>
+
+## glTF文件压缩和加载(解压)——Draco
+
+在本文的示例中，所演示加载的 .glb 文件是我自己在 Blender 中创建导出的。
+
+如同图片文件一样，也有专门针对 .glb 文件压缩的工具，最为著名的就是谷歌公司开源的：draco
+
+
+
+### Draco简介
+
+Draco 是一种库，用于压缩和解压缩 3D 几何网格(geometric mesh) 和 点云(point cloud)
+
+draco官网：https://google.github.io/draco/
+
+draco源码：https://github.com/google/draco
+
+
+
+<br>
+
+draco 底层是使用 c++ 编写的。
+
+draco 可以在不牺牲模型效果的前提下，将 .glb 文件压缩体积减小很多。
+
+> 就好像将普通文件压缩成 .zip 一样
+
+> 至于文件减少多少，这个暂时没有查询到
+
+
+
+<br>
+
+#### Draco使用流程是：
+
+1. 使用 Draco 将模型压缩，最终压缩后的文件格式为 .drc 或 .glb
+
+   > Draco 可以压缩众多 3D 格式文件，.glb 仅仅是其中一种
+
+2. 在 .glb 文件内部有一个特殊字段，用来表述本文件是否经过了 draco 压缩
+
+3. 当客户端(JS) 使用 GLTFLoader 去加载某个 .glb 文件时会去读取该标识
+
+4. 若判断该 .glb 文件未被压缩则直接进行加载和解析
+
+5. 若判断该 .glb 文件是被 draco 压缩过的，则会尝试调用 draco 解压类，下载 .glb 文件的同时进行解压，最终将下载、解压后的 .glb 数据传递给 GLTFLoader 使用
+
+   > 这就引申出来一个事情：我们需要提前将负责 draco 解压的类传递给 GLTFLoader，具体如何做请看后面的讲解。
+
+
+
+<br>
+
+#### 如何使用 Draco 压缩 .glb 文件？
+
+具体如何操作实现，暂时我也没有学习，先搁置一下。
+
+> 敬请期待以后的更新
+
+
+
+<br>
+
+#### 如何在Three.js 中加载压缩过的 .glb 文件？
+
+关于 Draco 的介绍，可以查看 Three.js 对于 Draco 的介绍描述：
+
+https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco
+
+
+
+Three.js 源码包中 draco 针对 gltf 文件的解压文件库：
+
+https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco/gltf
+
+在该目录下，一共有 4 个文件：
+
+1. draco_decoder.js
+
+   > draco 解压(解码) 相关 js
+
+2. draco_decoder.wasm
+
+   > .wasm 文件是 WebAssembly 解码器
+   >
+   > 关于 WebAssembly 更多知识，请执行查阅：https://www.wasm.com.cn/
+
+3. draco_encoder.js
+
+   > draco 压缩(编码) 相关 js
+
+4. draco_wasm_wrapper.js
+
+   > 用于封装 .wasm 解码器的 js
+
+对于我们使用 Three.js 而言，以上 4 个文件中除 draco_encoder.js 以外，其他 3 个文件都是我们需要的。
+
+
+
+重点来了...
+
+<br>
+
+#### 第1步：拷贝 draco/gltf 文件到项目 public 中
+
+我们将 Three.js 中 examples/js/libs/draco/gltf 目录拷贝到 React 项目的 public 目录中。
+
+> draco gltf 属于第 3 方库，我们目前暂时采用拷贝到 public 目录中这种形式
+
+> 在 Three.js 官方示例中使用的是 `examples/js/libs/draco/`，这是因为在 draco/ 和 draco/gltf 目录下，都有上面 4 个文件，所以使用哪个目录都可以。
+
+
+
+#### 第2步：实例化一个 DRACOLoader，并传递给 GLTFLoader
+
+> 关于 DRACOLoader 的详细解释，请参考官方文档：
+>
+> https://threejs.org/docs/#examples/zh/loaders/DRACOLoader
+
+<br>
+
+我们将之前 GLTFLoader  的代码修改如下：
+
+```diff
++	import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+
+	const gltfLoader = new GLTFLoader()
+
++	const dracoLoader = new DRACOLoader()
++	dracoLoader.setDecoderPath('./examples/js/libs/draco/gltf')
++	dracoLoader.setDecoderConfig({ type: 'js' })
++	gltfLoader.setDRACOLoader(dracoLoader)
+
+	gltfLoader.load('./model/vivo.glb', (gltf) => {
+    	scene.add(gltf.scene)
+	})
+```
+
+
+
+<br>
+
+下面就针对上面 4 行核心代码进行解释说明：
+
+1. `const dracoLoader = new DRACOLoader()`
+
+   实例化一个 DRACOLoader
+
+2. `dracoLoader.setDecoderPath('./examples/js/libs/draco/gltf')`
+
+   设置 dracoLoader 应该去哪个目录里查找 解压(解码) 文件
+
+3. `dracoLoader.setDecoderConfig({ type: 'js' })`
+
+   设置 dracoLoader 的配置项
+
+4. `gltfLoader.setDRACOLoader(dracoLoader)`
+
+   将 dracoLoader 传递给 gltfLoader，供 gltfLoader 使用
+
+至此，结束！
+
+
+
+<br>
+
+虽然 draco 非常复杂，但是对于我们使用者而言却很简单，仅仅上面 4 行代码即可实现加载被 draco 压缩过的 .glb 文件。
+
+
+
+<br>
+
+## 加载.drc模型文件
+
+在上面示例中，我们加载的是被 draco 压缩过的 .glb 文件。
+
+那如果是被 draco 压缩过的 .drc 文件呢？
+
+答：更加简单，直接使用 DRACOLoader即可。
+
+
+
+<br>
+
+DRACOLoader使用示例代码如下：
+
+```
+const loader = new DRACOLoader();
+loader.setDecoderPath( '/examples/js/libs/draco/gltf' );
+loader.preload();
+
+loader.load('./xxx/model.drc',
+	function ( geometry ) {
+		const material = new THREE.MeshStandardMaterial( { color: 0x606060 } );
+		const mesh = new THREE.Mesh( geometry, material );
+		scene.add( mesh );
+	}
+}
+```
+
+
+
+
+
+<br>
+
 下一章节，我们要学习如何添加 场景背景，呵， VR 看房效果要来了！

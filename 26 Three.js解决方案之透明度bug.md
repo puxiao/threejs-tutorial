@@ -222,13 +222,290 @@ colors.forEach((color, index) => {
 
    > 创建平面 在 Three.js 中使用的是 Three.PlaneBufferGeometry
 
-2. 给每个平面添加一个纹理贴图，并设置正方形平面透明度为 0.5
+2. 给每个平面添加一个颜色和纹理贴图，两面都渲染，并设置正方形平面透明度为 0.5
+
+   > 贴图我们直接使用网上的 2 张图片资源
+   >
+   > 图片都是由背景色的，并非背景透明的 PNG
 
 3. 让这 2 个平面形成 十字交叉 的状态
 
+   > 也就是说让其中一个平面的 y 轴旋转 180度
 
 
 
+<br>
+
+**实现的代码：**
+
+```
+const planeDataArr = [
+    {
+        color: 'red',
+        ratation: 0,
+        imgsrc: 'https://threejsfundamentals.org/threejs/resources/images/happyface.png'
+    },
+    {
+        color: 'yellow',
+        ratation: Math.PI * 0.5,
+        imgsrc: 'https://threejsfundamentals.org/threejs/resources/images/hmmmface.png'
+    }
+]
+
+planeDataArr.forEach((value) => {
+    const geometry = new Three.PlaneBufferGeometry(2, 2)
+    const textureLoader = new TextureLoader()
+    const material = new Three.MeshBasicMaterial({
+        color: value.color,
+        map: textureLoader.load(value.imgsrc),
+        opacity: 0.5,
+        transparent: true,
+        side:Three.DoubleSide
+    })
+    const plane = new Three.Mesh(geometry, material)
+    plane.rotation.y = value.ratation
+    scene.add(plane)
+})
+```
 
 
+
+<br>
+
+这次，我们将很容易看到，当红色平面一侧完全覆盖住黄色平面一侧时，会完全看不到黄色平面那一侧。
+
+> 实际运行效果我就不贴图了，你可以将上面代码实际运行一下。
+
+> 你就假装此刻你看到了。
+
+
+
+<br>
+
+用我们上面讲过的理论可解释这个现象：即 红色平面一侧颜色深度大于黄色平面一侧，当完全覆盖住之后黄色平面那一侧就不会再进行渲染，所以我们就看不到了。
+
+
+
+<br>
+
+**解决方案：将上面 2 个平面拆分成 4 个平面，这样可以确保每个平面都会被渲染。**
+
+由于我们这个场景 2 个平面十字交叉，所以我们就直接创建 4 个小的平面，然后将这 4 个小平面组合成 “2 个十字相交的平面”。
+
+具体实现的方式是：
+
+1. 将原本 较大的 1 个平面拆分成 2 个小平面
+
+2. 设置这 2 个小平面的纹理贴图偏移，各自占一半
+
+   > 这样可以最终让 2 个小平面贴合成 1 个完整的平面(纹理)
+
+3. 为了方便我们计算旋转，好让他们形成十字交叉，所以我们可以将 每组小平面放置在同一个空间中
+
+   > 这需要使用到 Three.Object3D
+
+
+
+<br>
+
+**实际代码：**
+
+```
+const planeDataArr = [
+    {
+        color: 'red',
+        ratation: 0,
+        imgsrc: 'https://threejsfundamentals.org/threejs/resources/images/happyface.png'
+    },
+    {
+        color: 'yellow',
+        ratation: Math.PI * 0.5,
+        imgsrc: 'https://threejsfundamentals.org/threejs/resources/images/hmmmface.png'
+    }
+]
+
+planeDataArr.forEach((value) => {
+    const base = new Three.Object3D()
+    base.rotation.y = value.ratation
+    scene.add(base)
+
+    const plane_size = 2
+    const half_size = plane_size / 2
+    const geometry = new Three.PlaneBufferGeometry(half_size, plane_size)
+    const arr = [-1, 1]
+    arr.forEach((x) => {
+        const textureLoader = new TextureLoader()
+        const texture = textureLoader.load(value.imgsrc)
+        texture.offset.x = x < 1 ? 0 : 0.5
+        texture.repeat.x = 0.5
+        const material = new Three.MeshBasicMaterial({
+            color: value.color,
+            map: texture,
+            transparent: true,
+            opacity: 0.5,
+            side: Three.DoubleSide
+        })
+        const plane = new Three.Mesh(geometry, material)
+        plane.position.x = x * half_size / 2
+        base.add(plane)
+    });
+})
+```
+
+>假设我们目标平面宽高均为 2，那么：
+>
+>1. 我们将该目标平面拆分成 2 个 宽 1、高 2 的平面
+>2. 获取并设置纹理贴图，并分别设置纹理的 offset.x 、repeat.x 各占 一半，也就是 0.5
+>3. 我们知道拆分出的 2 个小平面他们 x 轴相差 1 个小平面的宽度，由于我们设置的内部循环数组为 [-1,1]，所以 2 个小平面的 x 值应该是 正负宽度一半的一半。
+
+
+
+<br>
+
+这一次，我们再运行就会发现，无论任何视角下，红色平面不再会这该黄色平面了。
+
+
+
+<br>
+
+**这是第 2 种解决透明 "bug" 的方案：将对象进行拆分**
+
+**但是请注意，该解决方式只适合那些简单，且位置相对固定的 3D 对象。**
+
+> 若物体本身就比较复杂，面比较多，还要再拆分，那么就太消耗渲染性能
+>
+> 并且位置必须相对固定，若不固定会增加我们拼接的难度
+
+
+
+<br>
+
+接下来讲解第 3 种解决方案。
+
+### 启用alphaTest来避免遮挡问题
+
+首先我们回顾一下上面的例子，当时示例中 2 个平面的纹理贴图背景是不透明的。
+
+那我们可以尝试另外 2 个图片贴图，他们是背景透明的 PNG 图片。
+
+我们要使用材质(Three.Material) 的一个属性 .alphaTest。
+
+
+
+<br>
+
+**.alphaTest属性介绍**
+
+.alphaTest 是一个透明度检测值，值得类型是 Number，取值范围为 0 - 1。
+
+若透明度低于该值，则不会进行渲染。
+
+> 反之，只有某个点透明度高于该值的才会进行渲染
+
+.alphaTest 默认值为 0。
+
+> 也就是说默认情况下即使透明度为 0 也会进行渲染
+>
+> 假设我们给材质设置有 color，那么肯定就会渲染出内容
+
+
+
+<br>
+
+我们在最初 2 个平面的代码基础上进行修改。
+
+1. 修改纹理贴图资源，这次使用背景透明的 PNG 图片
+2. 材质不再设置 .opacity 属性，改设置 .alphaTest 属性
+
+<br>
+
+修改后的代码如下：
+
+```
+const planeDataArr = [
+    {
+        color: 'red',
+        ratation: 0,
+        imgsrc: 'https://threejsfundamentals.org/threejs/resources/images/tree-01.png'
+    },
+    {
+        color: 'yellow',
+        ratation: Math.PI * 0.5,
+        imgsrc: 'https://threejsfundamentals.org/threejs/resources/images/tree-02.png'
+    }
+]
+
+planeDataArr.forEach((value) => {
+    const geometry = new Three.PlaneBufferGeometry(2, 2)
+    const textureLoader = new TextureLoader()
+    const material = new Three.MeshBasicMaterial({
+        color: value.color,
+        map: textureLoader.load(value.imgsrc),
+        alphaTest: 0.5,
+        transparent: true,
+        side:Three.DoubleSide
+    })
+    const plane = new Three.Mesh(geometry, material)
+    plane.rotation.y = value.ratation
+    scene.add(plane)
+})
+```
+
+> 请注意，上面代码中我们取了一个透明度的中间值，将 .alphaTest 属性值设置为 0.5。
+>
+> 你可以尝试将 .alphaTest 分别设置为 0.2 或 0.8 看看结果会有什么变化。
+>
+> > 最终边缘清晰度取决于贴图图片中抠图的精细程度。若边缘越不清晰(也就是越模糊)，最终呈现出的白边会越严重。
+
+
+
+<br>
+
+实际运行后就会发现，2 棵不同颜色的树木，彼此十字交叉，可以透过前面树的枝叶看到另外一颗树。
+
+
+
+### 本文小节
+
+我们讲解了为什么会在某些视角下，某些半透明的物体个别地方三角面不会被渲染的原因。
+
+通过几个示例，讲解了 3 种解决方案：
+
+1. 将物体添加 2 份，1份负责渲染前面，另外一份负责渲染后面
+
+   > 缺点：增加渲染工作量
+
+2. 将物体(或平面)进行拆分，已确保每 1 份均会有机会被渲染
+
+   > 缺点：只适合简单的物体，且位置固定容易拼凑
+
+3. 通过设置 .alphaTest，以实现透明渲染
+
+   > 缺点：若贴图抠图不够精细，容易出现白边
+
+
+
+<br>
+
+就像上面我们提到的，每一种解决方案都有各自的使用场景和缺点。
+
+我们今后在实际的项目中，一定要根据实际情况来作出选择，看使用哪种方案。
+
+> 说白了，无非就是在性能、复杂度、精细化方面进行取舍，最终找出合适的方案。
+
+
+
+<br>
+
+> 你可能会注意到本章节我并没有贴出完整的示例代码，而仅仅贴出了核心的代码。
+>
+> 我是这样认为的，如果到了今天你依然无法自己写出完整的代码，还需要靠复制我完整的示例代码，那你干脆别学 Three.js了，放弃吧。
+
+
+
+<br>
+
+至此，本章结束。
+
+目前我们所有的示例都是基于 1 个 画布(canvas) 和 1 个 镜头(camera)，下一节我们讲解同一个网页中渲染多个 画布 和多个镜头。
 

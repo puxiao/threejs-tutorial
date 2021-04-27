@@ -448,6 +448,47 @@ map_Kd metal_texture.jpg
 
 <br>
 
+**关于.mtl文件内容的补充说明：**
+
+> 下面我将针对上面的 .mtl 文件内容进行逐一解释
+
+1. #：注释内容
+2. newtml：材质的名称
+3. Ns：反射指数，即反射高光度，值越高则高光越密集，一般取值范围 0 - 1000
+4. Ka：材质的环境光，一般取值范围 0 - 1
+5. Kd：散射光
+6. Ks：镜面光
+7. Ni：折射光，一般取值范围 0.01 - 10
+8. d：渐隐指数，取值范围为 0 - 1，当值为 1 时完全不透明，当值为 0 时完全透明
+9. illum：材质的光照模型，值为整数，取值范围为 0 - 10
+10. map_Kd：漫反射指定颜色纹理贴图文件路径
+
+
+
+<br>
+
+上面属性中 illum 实际上是 “illumination model”，即光照模型。
+
+illum 的取值分别对应的是：
+
+| 取值 | 光照模型                                                     | 中文名                                      |
+| ---- | ------------------------------------------------------------ | ------------------------------------------- |
+| 0    | Color on and Ambient off                                     | 色彩开，阴影色关                            |
+| 1    | Color on and Ambient on                                      | 色彩开，阴影色开                            |
+| 2    | Highlight on                                                 | 高光开                                      |
+| 3    | Reflection on and Ray trace on                               | 反射开，光线追踪开                          |
+| 4    | Transparency: Glass on / Reflection: Ray trace on            | 透明： 玻璃开 反射：光线追踪开              |
+| 5    | Reflection: Fresnel on and Ray trace on                      | 反射：菲涅尔衍射开，光线追踪开              |
+| 6    | Transparency: Refraction on / Reflection: Fresnel off and Ray trace on | 透明：折射开 反射：菲涅尔衍射关，光线追踪开 |
+| 7    | Transparency: Refraction on / Reflection: Fresnel on and Ray trace on | 透明：折射开 反射：菲涅尔衍射开，光线追踪开 |
+| 8    | Reflection on and Ray trace off                              | 反射开，光线追踪关                          |
+| 9    | Transparency: Glass on / Reflection: Ray trace off           | 透明： 玻璃开 反射：光线追踪关              |
+| 10   | Casts shadows onto invisible surfaces                        | 投射阴影于不可见表面                        |
+
+
+
+<br>
+
 **那么问题来了，由于 hello.mtl 中包含纹理图片的路径，如果我们将 图片资源(metal_texture.jpg) 拷贝到 src/assets/model 中，.jpg 图片会被 webpack 重新编译成别的文件名，这会造成我们加载不到 纹理图片 资源。**
 
 

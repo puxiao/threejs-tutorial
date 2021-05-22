@@ -23,13 +23,44 @@
 
 说一声抱歉：我在写第 25 节文章的时候才彻底理解 左手坐标系统和右手坐标系统，而我在前面章节中有可能讲解坐标体系对应的 上下左右前后 时把方向搞错了，但是我记不清是哪个章节了。
 
+<br>
+
+> 以上内容更新于 2021.04.16
+
+
 
 <br>
 
-我在学习的过程中也向 Three.js 官方提交了自己的 PR，贡献出自己一点点代码。
+> 以下内容更新于 2021.05.22
 
-1. PR [21409](https://github.com/mrdoob/three.js/pull/21409) 已在 r127 中合并
+
+
+<br>
+
+> 因为本系列暂停了本系列教程的更新，所以就暂时在这里补充上关于 3D 坐标系的相关知识吧。
+
+直角坐标系与球极坐标系：
+
+1. 左右手坐标系统他们都是 直角坐标系，使用 (x,y,z) 来表示空间某个点的坐标。
+
+2. 球极坐标系，又称 空间极坐标，使用 (r,φ,θ) 来表示空间某个点的坐标。
+
+   > Three.js 的球极坐标 对应的类是：Spherical
+   >
+   > https://threejs.org/docs/index.html#api/zh/math/Spherical
+
+> 只有真正了解 Three.js 的这 2 套坐标系，同时理解 Vector2(二维向量)、Vector3(三维向量)、Raycaster(光线投射)，才有可能晋级为 Three.js 空间高手。
+
+
+
+<br>
+
+我在学习的过程中也向 Three.js 官方提交了自己的 PR，贡献出自己一点点力量。
+
+1. PR [21409](https://github.com/mrdoob/three.js/pull/21409) 已获准在 r127 中合并
 2. PR  [21642](https://github.com/mrdoob/three.js/pull/21642) 已获准在 r128 中合并
+3. PR  [21687](https://github.com/mrdoob/three.js/pull/21687) 已获准在 r128中合并
+4. PR  [21729](https://github.com/mrdoob/three.js/pull/21729) 已获准在 r129中合并
 
 Three.js 官方维护人员非常热心和严谨。
 
@@ -37,7 +68,7 @@ Three.js 官方维护人员非常热心和严谨。
 
 
 
-> 以上内容更新于 2021.04.16
+> 以上内容更新于 2021.05.22
 
 
 

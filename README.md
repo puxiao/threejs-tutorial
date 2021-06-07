@@ -1,4 +1,5 @@
 # threejs-tutorial
+
 从今天 2020年11月27日 开始学习和探索 Three.js 。  
 
 <br>
@@ -76,15 +77,23 @@ Three.js 官方维护人员非常热心和严谨。
 
 
 ## 我的学习资料
+
 我刚开始学习 three.js，目前主要看 Three.js 官方出的 教程 和文档：
+
 * [threejsfundamentals.org：官方教程](https://threejsfundamentals.org/threejs/lessons/zh_cn/) (该教程只有前几篇是有中文翻译的)
 * [threejs.org：官方中文文档](https://threejs.org/docs/index.html#manual/zh/introduction/Creating-a-scene)
 
 除此之外，还有其他几个值得推荐的、国内博主写的 Three.js 系列教程：
 
 * [wjceo.com：暮志未晚写的three.js教程](https://www.wjceo.com/blog/threejs/)
+
 * [hewebgl.com：Three.js基础教程](http://www.hewebgl.com/article/articledir/1)
+
 * [webgl3d.cn：Three.js教程](http://www.webgl3d.cn/Three.js/)
+
+* 强烈推荐看一下 [图解WebGL&Three.js工作原理](https://www.cnblogs.com/wanbo/p/6754066.html)
+
+  > 可惜该作者近几年都没再更新 Three.js 相关文章。
 
 特别说明 hewebgl.com 和 webgl3d.cn 的教程存在问题就是：
 

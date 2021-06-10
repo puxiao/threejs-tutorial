@@ -1,4 +1,5 @@
 # threejs-tutorial
+
 从今天 2020年11月27日 开始学习和探索 Three.js 。  
 
 <br>
@@ -76,7 +77,9 @@ Three.js 官方维护人员非常热心和严谨。
 
 
 ## 我的学习资料
+
 我刚开始学习 three.js，目前主要看 Three.js 官方出的 教程 和文档：
+
 * [threejsfundamentals.org：官方教程](https://threejsfundamentals.org/threejs/lessons/zh_cn/) (该教程只有前几篇是有中文翻译的)
 * [threejs.org：官方中文文档](https://threejs.org/docs/index.html#manual/zh/introduction/Creating-a-scene)
 

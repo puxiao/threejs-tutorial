@@ -660,6 +660,34 @@ loader.load('./xxx/model.drc',
 
 
 
+<br>
+
+## 补充说明：修改模型位置偏差
+
+无论加载 .obj 文件，还是本章讲解的加载 .gltf 文件，假设模型在建模软件中位置中心并不是原点，而是非常偏远的位置。
+
+那么文件加载完成后，将模型添加到场景中，模型的位置并不在场景视角的中心位置，如果位置过于偏远，甚至有可能根本看不见模型。
+
+我们可以通过以下方式，计算模型的位置偏差，并修正模型的位置，使其出现在视野中心位置。
+
+```
+const loader = new GLTFLoader()
+loader.load('./model/lddq.gltf', (gltf) => {
+    const group = gltf.scene
+
+    const box = new Three.Box3().setFromObject(group)
+    const center = box.getCenter(new Three.Vector3())
+
+    group.position.x += (group.position.x - center.x)
+    group.position.y += (group.position.y - center.y)
+    group.position.z += (group.position.z - center.z)
+
+    scene.add(group)
+})
+```
+
+> Box3 的介绍请执行查阅官方文档。
+
 
 
 <br>

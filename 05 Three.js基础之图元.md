@@ -334,7 +334,7 @@ thetaLength — 圆柱底面圆扇区的中心角，通常被称为“θ”（�
 
    > this.setAttribute('position', new BufferAttribute(this._vertices, 3))
 
-2. 假设这个 BufferGeometry 需要考虑反观，但不需要考虑纹理贴图，那么它需要设置 postion 和 normal。
+2. 假设这个 BufferGeometry 需要考虑反光，但不需要考虑纹理贴图，那么它需要设置 postion 和 normal。
 
    > this.setAttribute('position', new BufferAttribute(this._vertices, 3))
    >

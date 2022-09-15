@@ -172,3 +172,41 @@ renderer.render(secen, cameraB)
 
 <br>
 
+#### 05、手工修改Object3D实例的.matrix时切记要设置 .matrixAutoUpdate=false
+
+默认情况下 Object3D 实例的 .matrixAutoUpdate 的值为 true，也就是说当通过 .applyMatrix4()、.applyQuaternion() 等修改实例的变换时，默认会自动更新其他所有相关属性值，例如 position、quaternion、scale、rotation。
+
+但是，如果直接通过修改 Object3D 实例的 .matrix 值时，生效的前提是：
+
+1. 先把 .matrixAutoUpdate 设置为 false
+2. 不去调用 .updateMatrix()
+
+```
+const mesh = new Mesh(...)
+
+mesh.matrixAutoUpdate = false
+mesh.matrix.copy(otherMatrix)
+```
+
+
+
+<br>
+
+但是上面的代码存在另外一个问题：尽管 .matrix 值更新了，可是 mesh 的其他属性值 例如 .position，.quaternion，scale，rotation 却没有自动更新。
+
+解决方式很简单，可以通过 Matrix 的 .decompose() 方法优雅更新它们。
+
+举例说明：假设现在有 meshA、meshB 两个对象，需要将 meshB 的各种变换属性值设置成和 meshA 完全相同
+
+```
+meshB.matrixAutoUpdate = false
+meshB.matrix.copy(meshA.matrix)
+meshB.matrix.decompose(meshB.position, meshB.quaternion, meshB.scale)
+```
+
+> 当修改 meshB.quaternion 值后会自动修改 meshB.rotation 的值
+
+
+
+<br>
+

@@ -12,6 +12,7 @@
 2. 为了保证代码简洁，所以在实用某些类时没有添加 `Three.` 前缀
 3. 绝大多数时候都使用箭头函数
 4. 使用 Xxx 泛指同一类型，例如 XxxCamer 泛指各类相机
+5. 由于我们讲解的是 Three.js，所以全部使用的是 右手坐标系
 
 
 
@@ -222,4 +223,42 @@ meshB.matrix.decompose(meshB.position, meshB.quaternion, meshB.scale)
 
 
 <br>
+
+#### 07、保持外观和位置的前提下，将立方体的顶点坐标 "归一化"
+
+这里说的立方体是指基于 BoxGeometry 而创建的立方体。
+
+这里说的 顶点坐标 “归一化” 是指将立方体顶点坐标修改成 1x1x1 规格的立方体顶点坐标。
+
+这里说的 保持外观和位置 是指通过修改其 变换矩阵 .matrix 来实现。
+
+实现思路：
+
+1. 凡是基于 BoxGeometry 的立方体，其顶点坐标信息都是统一规范的，尽管其值可能不同
+2. 所以我们就根据其值来确定这个立方体与 1x1x1 立方体的 宽、高、深 比例
+3. 将这个缩放比例应用到立方体本身的矩阵中即可
+4. 同时将这个立方体的顶点信息修改成 1x1x1 立方体的顶点信息
+
+```
+const boxGeometryNormalize = (box) => {
+    const originX = box.geometry.attributes.position.array[0]
+    const originY = box.geometry.attributes.position.array[1]
+    const originZ = box.geometry.attributes.position.array[2]
+
+    const scaleX = originX / 0.5
+    const scaleY = originY / 0.5
+    const scaleZ = originZ / 0.5
+    
+    box.geometry = new BoxGeometry()
+    box.matrixAutoUpdate = false
+    box.matrix.makeScale(scaleX, scaleY, scaleZ)
+    box.matrix.decompose(box.position, box.quaternion, box.scale)
+}
+```
+
+
+
+<br>
+
+
 

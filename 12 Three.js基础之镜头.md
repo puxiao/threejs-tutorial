@@ -518,7 +518,7 @@ OrthographicCamera( left : Number, right : Number, top : Number, bottom : Number
 
 **从实际的角度来看，一定要注意以下几点：**
 
-1. left 的值不能大于 right，同理 top 的值不能大于 bottom
+1. left 的值不能大于 right，同理 bottom 的值不能大于 top。 如果没有按照这个约定，例如 bottom 大于 top 相当于颠倒了相机。
 2. near 设置越小，投影的映像越大
 3. left 与 right 之间的距离、top 与 bottom 之间的距离的比例一定要和 canvas 比例相同，否则会导致投影的物体形状变形
 

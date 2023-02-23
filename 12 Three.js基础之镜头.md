@@ -534,7 +534,7 @@ OrthographicCamera( left : Number, right : Number, top : Number, bottom : Number
 
 
 
-### 假设我们在 HelloCamer 示例中使用 OrthographicCamera
+### 假设我们在 HelloCamera 示例中使用 OrthographicCamera
 
 **需要修改的地方为：**
 

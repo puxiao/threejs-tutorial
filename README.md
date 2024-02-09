@@ -2,6 +2,13 @@
 
 从今天 2020年11月27日 开始学习和探索 Three.js 。  
 
+
+<br>
+<p align="center">
+<img src="https://raw.githubusercontent.com/puxiao/notes/master/imgs/wechat.jpg" alt="wechat.jpg"/>
+</p>
+
+
 <br>
 
 > 以下内容更新于 2021.04.16
@@ -417,4 +424,3 @@ https://www.bilibili.com/video/BV1X7411F744
 <br>
 
 **大家都是 Three.js 小白新手，一起加油！**
-
